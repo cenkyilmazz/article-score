@@ -70,7 +70,7 @@
       font-weight: 500;
       font-family: 'Inter', 'DM Sans', sans-serif;
       color: #555;
-      margin-bottom: 4px;
+      margin-bottom: 6px;
     }
 
     input[type="text"] {
@@ -482,7 +482,7 @@
   </div>
 
   <!-- Input Card -->
-  <div class="card">
+  <div class="card" style="position:relative; z-index:1;">
     <div class="card-inner">
       <label class="field-label">Medium Link</label>
       <input type="text" id="urlInput" placeholder="https://medium.com/@kullanici/makale-basligi" />
@@ -539,14 +539,20 @@
     display:none;
     width:394px;
     max-width:100%;
-    margin-top:8px;
+    margin-top:-8px;
     overflow:hidden;
     transition: opacity 0.3s ease, transform 0.3s ease;
     opacity:0;
     transform: translateY(-6px);
+    background:#F6F6F6;
+    border: 1px solid #E6E6E6;
+    border-radius:0 0 10px 10px;
+    padding: 31px 24px 24px 24px;
+    box-sizing: border-box;
+    box-shadow: 0 1px 2px rgba(26, 26, 26, 0.05);
   ">
     <button onclick="reopenPanel()" style="
-      width:346px;
+      width:344px;
       height:36px;
       background:#fff;
       border: 1px solid #E6E6E6;
@@ -558,7 +564,6 @@
       cursor:pointer;
       box-shadow: 0 1px 2px rgba(26,26,26,0.05);
       display:block;
-      margin: 0 24px;
       transition: background 0.2s;
     " onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='#fff'">
       Değerlendirmeyi tekrar göster
