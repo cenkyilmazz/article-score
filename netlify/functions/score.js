@@ -80,6 +80,7 @@ SADECE şu JSON formatında yanıt ver, başka hiçbir şey yazma:
 
     const data = await response.json();
     if (!response.ok) {
+      console.error("OpenAI error:", JSON.stringify(data));
       return { statusCode: response.status, headers, body: JSON.stringify({ error: data.error?.message || "OpenAI error" }) };
     }
 
