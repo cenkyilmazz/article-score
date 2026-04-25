@@ -534,6 +534,37 @@
     </div>
   </div>
 
+  <!-- Show again button -->
+  <div id="showAgainWrap" style="
+    display:none;
+    width:394px;
+    max-width:100%;
+    margin-top:8px;
+    overflow:hidden;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    opacity:0;
+    transform: translateY(-6px);
+  ">
+    <button onclick="reopenPanel()" style="
+      width:346px;
+      height:36px;
+      background:#fff;
+      border: 1px solid #E6E6E6;
+      border-radius:8px;
+      font-size:14px;
+      font-weight:500;
+      font-family:'Inter',sans-serif;
+      color:#1a1a1a;
+      cursor:pointer;
+      box-shadow: 0 1px 2px rgba(26,26,26,0.05);
+      display:block;
+      margin: 0 24px;
+      transition: background 0.2s;
+    " onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='#fff'">
+      Değerlendirmeyi tekrar göster
+    </button>
+  </div>
+
   <!-- Overlay -->
   <div class="panel-overlay" id="panelOverlay"></div>
 
@@ -750,7 +781,23 @@ SADECE şu JSON formatında yanıt ver, başka hiçbir şey yazma:
   ]
 }`;
 
-    const strengthIcons = ["💪", "✨", "🎯", "🚀"];
+    function showAgainBtn() {
+      const el = document.getElementById("showAgainWrap");
+      el.style.display = "block";
+      requestAnimationFrame(() => {
+        el.style.opacity = "1";
+        el.style.transform = "translateY(0)";
+      });
+    }
+
+    function hideAgainBtn() {
+      const el = document.getElementById("showAgainWrap");
+      el.style.opacity = "0";
+      el.style.transform = "translateY(-6px)";
+      setTimeout(() => { el.style.display = "none"; }, 300);
+    }
+
+        const strengthIcons = ["💪", "✨", "🎯", "🚀"];
     const improvementIcons = ["🔧", "💡", "📈", "🎨"];
 
     const SUCCESS_SVG = `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="1" width="14" height="14" rx="1" stroke="white" stroke-width="2"/><path d="M5 8.33594L7 10.3359L11 6.33594" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
@@ -805,6 +852,8 @@ SADECE şu JSON formatında yanıt ver, başka hiçbir şey yazma:
         fileName = "";
         resetDropzone();
         urlInput.disabled = false;
+      } else {
+        hideAgainBtn();
       }
     });
 
@@ -862,6 +911,7 @@ SADECE şu JSON formatında yanıt ver, başka hiçbir şey yazma:
       docText = "";
       fileName = "";
       urlInput.disabled = false;
+      hideAgainBtn();
     }
 
     // Delete button
@@ -871,10 +921,16 @@ SADECE şu JSON formatında yanıt ver, başka hiçbir şey yazma:
       }
     });
 
-    // Close panel
-    function closePanel() {
+function closePanel() {
       document.getElementById("resultCard").classList.remove("show");
       document.getElementById("panelOverlay").classList.remove("show");
+      showAgainBtn();
+    }
+
+    function reopenPanel() {
+      document.getElementById("resultCard").classList.add("show");
+      document.getElementById("panelOverlay").classList.add("show");
+      hideAgainBtn();
     }
     document.getElementById("panelOverlay").addEventListener("click", closePanel);
     document.addEventListener("click", (e) => {
@@ -967,6 +1023,7 @@ SADECE şu JSON formatında yanıt ver, başka hiçbir şey yazma:
       // Show panel + overlay
       document.getElementById("resultCard").classList.add("show");
       document.getElementById("panelOverlay").classList.add("show");
+      hideAgainBtn();
       document.getElementById("scoreBadgeNum").textContent = data.score;
     }
 
