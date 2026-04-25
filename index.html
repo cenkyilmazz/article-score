@@ -73,27 +73,24 @@
       margin-bottom: 4px;
     }
 
-    input[type="text"], textarea {
+    input[type="text"] {
       width: 346px;
       max-width: 100%;
-      padding: 10px;
+      height: 36px;
+      padding: 0 10px;
       border: 1px solid var(--border);
       border-radius: 6px;
       font-size: 14px;
-      font-family: 'Inter', sans-serif;
-      font-weight: 400;
+      font-family: 'DM Sans', sans-serif;
       outline: none;
       transition: border-color 0.2s;
       color: var(--black);
       background: #fff;
       box-shadow: 0 1px 2px rgba(26, 26, 26, 0.05);
       display: block;
-      resize: none;
-      line-height: 1.6;
     }
-    input[type="text"] { height: 36px; padding: 0 10px; }
-    input[type="text"]:focus, textarea:focus { border-color: #1a1a1a; box-shadow: none; outline: none; }
-    input[type="text"]:disabled, textarea:disabled { background: #f9f9f9; color: #aaa; }
+    input[type="text"]:focus { border-color: #1a1a1a; box-shadow: none; outline: none; }
+    input[type="text"]:disabled { background: #f9f9f9; color: #aaa; }
 
     .divider {
       display: flex;
@@ -454,8 +451,8 @@
   <!-- Input Card -->
   <div class="card">
     <div class="card-inner">
-      <label class="field-label">Makale Metni</label>
-      <textarea id="urlInput" placeholder="Makale metnini buraya yapıştır..." rows="5"></textarea>
+      <label class="field-label">Medium Link</label>
+      <input type="text" id="urlInput" placeholder="https://medium.com/@kullanici/makale-basligi" />
 
       <div class="divider">
         <div class="divider-line"></div>
@@ -815,8 +812,9 @@ SADECE şu JSON formatında yanıt ver, başka hiçbir şey yazma:
       }
       setLoading(true);
 
-      const articleText = docText.trim() || pastedText;
-      const content = `Aşağıdaki makale metnini değerlendir:\n\n${articleText.slice(0, 8000)}`;
+      const content = docText.trim()
+        ? `Aşağıdaki makale metnini değerlendir:\n\n${docText.slice(0, 8000)}`
+        : `Şu Medium makalesini değerlendir (URL): ${url}`;
 
       // ← Vercel deploy sonrası kendi URL'inle değiştir
       const PROXY_URL = "https://article-score.netlify.app/.netlify/functions/score";
