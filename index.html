@@ -308,20 +308,51 @@
       display: none;
     }
 
-    /* ── Result Card ── */
-    .result-card {
-      width: 394px;
-      max-width: 100%;
-      background: #fff;
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 32px;
-      box-shadow: 0 2px 28px rgba(0,0,0,0.06);
-      margin-top: 24px;
-      display: none;
-      animation: fadeUp 0.5s ease;
+    /* ── Side Panel Overlay ── */
+    .panel-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.30);
+      z-index: 200;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.35s ease;
     }
-    .result-card.show { display: block; }
+    .panel-overlay.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    /* ── Side Panel ── */
+    .result-card {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      bottom: 16px;
+      width: 626px;
+      max-width: calc(100vw - 32px);
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 1px 2px rgba(26, 26, 26, 0.05);
+      z-index: 201;
+      display: flex;
+      flex-direction: column;
+      transform: translateX(calc(100% + 32px));
+      transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      overflow: visible;
+    }
+    .result-card.show {
+      transform: translateX(0);
+    }
+    .panel-scroll {
+      overflow-y: auto;
+      overflow-x: visible;
+      flex: 1;
+      padding: 0 0 24px 0;
+    }
+    .panel-scroll::-webkit-scrollbar { width: 4px; }
+    .panel-scroll::-webkit-scrollbar-track { background: transparent; }
+    .panel-scroll::-webkit-scrollbar-thumb { background: #e0e0e0; border-radius: 4px; }
 
     .score-header {
       display: flex;
@@ -503,35 +534,167 @@
     </div>
   </div>
 
-  <!-- Result -->
+  <!-- Overlay -->
+  <div class="panel-overlay" id="panelOverlay"></div>
+
+  <!-- Result Panel -->
   <div class="result-card" id="resultCard">
-    <div class="score-header">
-      <div class="score-ring-wrap">
-        <svg width="140" height="140" viewBox="0 0 140 140">
-          <circle cx="70" cy="70" r="54" fill="none" stroke="#f1f0ee" stroke-width="10"/>
-          <circle id="scoreCircle" cx="70" cy="70" r="54" fill="none" stroke="#22c55e" stroke-width="10"
-            stroke-dasharray="339.29" stroke-dashoffset="339.29" stroke-linecap="round"
-            style="transition: stroke-dashoffset 1.2s cubic-bezier(0.4,0,0.2,1), stroke 0.4s"/>
-        </svg>
-        <div class="score-ring-inner">
-          <span class="score-number" id="scoreNumber">0</span>
-          <span class="score-denom">/ 100</span>
-        </div>
+    <div class="panel-scroll">
+    <!-- Panel Top Image Area -->
+    <div style="position:relative; margin: 24px 24px 0 24px; overflow:visible;">
+      <!-- Top background image -->
+      <div style="width:578px; height:64px; background:#EDEDED; border-radius:10px;"></div>
+
+      <div id="summaryCard" style="
+        width:578px;
+        margin-top:16px;
+        background:#fff;
+        border: 1px solid #E6E6E6;
+        border-radius:10px;
+        box-shadow: 0 1px 2px rgba(26,26,26,0.05);
+        box-sizing:border-box;
+        position:relative;
+        overflow:hidden;
+        padding-bottom:12px;
+      ">
+        <!-- Title: 12px from top, 16px from left -->
+        <div style="
+          padding-top:12px;
+          padding-left:16px;
+          padding-right:16px;
+          font-size:14px;
+          font-weight:600;
+          font-family:'Inter',sans-serif;
+          color:#1a1a1a;
+        ">Genel Makale Değerlendirmesi</div>
+
+        <!-- Divider: 10px below title -->
+        <div style="
+          margin-top:10px;
+          height:1px;
+          background:#E6E6E6;
+        "></div>
+
+        <!-- Summary text: 8px below divider -->
+        <p id="summaryText" style="
+          margin:8px 16px 0 16px;
+          font-size:13px;
+          font-weight:400;
+          font-family:'Inter',sans-serif;
+          color:#444;
+          line-height:21px;
+          letter-spacing:-0.13px;
+        "></p>
       </div>
-      <div class="score-meta">
-        <div class="grade-row">
-          <span class="grade-letter" id="gradeLetter">—</span>
-          <span class="grade-label">Genel Not</span>
-        </div>
-        <p class="summary-text" id="summaryText"></p>
+
+      <!-- Second card: 16px below summary card -->
+      <div id="secondCard" style="
+        width:578px;
+        margin-top:16px;
+        background:#fff;
+        border: 1px solid #C2E0CC;
+        border-radius:10px;
+        box-shadow: 0 1px 2px rgba(26,26,26,0.05);
+        box-sizing:border-box;
+        position:relative;
+        overflow:hidden;
+        padding-bottom:12px;
+      ">
+        <div style="
+          padding-top:12px;
+          padding-left:16px;
+          padding-right:16px;
+          padding-bottom:10px;
+          font-size:13px;
+          font-weight:600;
+          font-family:'Inter',sans-serif;
+          color:#24904A;
+          background:#E9F4ED;
+        ">Güçlü Yönler</div>
+
+        <div style="
+          height:1px;
+          background:#C2E0CC;
+        "></div>
+
+        <div id="strengthsList" style="padding:0;"></div>
+      </div>
+
+      <!-- Third card: Geliştirilebilir Yönler -->
+      <div id="improvementsCard" style="
+        width:578px;
+        margin-top:16px;
+        margin-bottom:0;
+        background:#fff;
+        border: 1px solid #FFDEC3;
+        border-radius:10px;
+        box-shadow: 0 1px 2px rgba(26,26,26,0.05);
+        box-sizing:border-box;
+        position:relative;
+        overflow:hidden;
+        padding-bottom:12px;
+      ">
+        <div style="
+          padding-top:12px;
+          padding-left:16px;
+          padding-right:16px;
+          padding-bottom:10px;
+          font-size:13px;
+          font-weight:600;
+          font-family:'Inter',sans-serif;
+          color:#F37919;
+          background:#FEF2E8;
+        ">Geliştirilebilir Yönler</div>
+
+        <div style="height:1px; background:#FFDEC3;"></div>
+
+        <div id="improvementsList" style="padding:0;"></div>
+      </div>
+      <button id="panelCloseBtn" style="
+        position:absolute; top:16px; right:-12px;
+        background:none; border:none; cursor:pointer; padding:0; line-height:0; z-index:10;
+      ">
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M0 8C0 3.58172 3.58172 0 8 0H24C28.4183 0 32 3.58172 32 8V24C32 28.4183 28.4183 32 24 32H8C3.58172 32 0 28.4183 0 24V8Z" fill="black"/>
+          <path d="M20.8031 11.2031L11.2031 20.8031" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M11.2031 11.2031L20.8031 20.8031" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+
+    </div>
+    <!-- Orange score rectangle: positioned relative to result-card, left edge bleeds out -->
+    <div style="
+      position:absolute;
+      left: -8px;
+      top: calc(24px + 10px);
+      width:184px; height:44px;
+      background:#F66814;
+      border-radius:8px;
+      display:flex; align-items:center;
+      padding: 0 6px 0 16px;
+      box-sizing:border-box;
+      z-index: 202;
+      overflow: visible;
+    ">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:16px;height:16px;flex-shrink:0;">
+        <path d="M5.33333 8H10.6667M10.6667 8L8 10.6667M10.6667 8L8 5.33333M3.33333 2H12.6667C13.403 2 14 2.59695 14 3.33333V12.6667C14 13.403 13.403 14 12.6667 14H3.33333C2.59695 14 2 13.403 2 12.6667V3.33333C2 2.59695 2.59695 2 3.33333 2Z" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span style="font-size:12px; font-weight:700; font-family:'Inter',sans-serif; color:#fff; margin-left:16px; margin-right:12px; white-space:nowrap;">SKOR</span>
+      <!-- White score pill -->
+      <div style="
+        width:85px; height:32px; flex-shrink:0;
+        background:#fff;
+        border-radius:4px;
+        display:flex; align-items:center; justify-content:center;
+      ">
+        <span style="font-size:18px; font-weight:700; font-family:'Inter',sans-serif; color:#1a1a1a;" id="scoreBadgeNum">—</span>
+        <span style="font-size:18px; font-weight:700; font-family:'Inter',sans-serif; color:#B7B7B7;">/100</span>
       </div>
     </div>
 
-    <div class="section-title green">💚 GÜÇLÜ YÖNLER</div>
-    <div class="feedback-list" id="strengthsList"></div>
 
-    <div class="section-title orange">🔶 GELİŞTİRİLEBİLİR YÖNLER</div>
-    <div class="feedback-list" id="improvementsList"></div>
+
+    </div><!-- /panel-scroll -->
   </div>
 
   <!-- Sticky bottom MEDIUM bar -->
@@ -708,6 +871,16 @@ SADECE şu JSON formatında yanıt ver, başka hiçbir şey yazma:
       }
     });
 
+    // Close panel
+    function closePanel() {
+      document.getElementById("resultCard").classList.remove("show");
+      document.getElementById("panelOverlay").classList.remove("show");
+    }
+    document.getElementById("panelOverlay").addEventListener("click", closePanel);
+    document.addEventListener("click", (e) => {
+      if (e.target.closest("#panelCloseBtn")) closePanel();
+    });
+
     function setLoading(on) {
       const btn = document.getElementById("scoreBtn");
       const spinner = document.getElementById("spinner");
@@ -755,13 +928,8 @@ SADECE şu JSON formatında yanıt ver, başka hiçbir şey yazma:
     }
 
     function renderResult(data) {
-      // Score ring
-      animateScore(data.score);
-
-      // Grade
-      const gradeLetter = document.getElementById("gradeLetter");
-      gradeLetter.textContent = data.grade;
-      gradeLetter.style.color = getGradeColor(data.grade);
+      // Score badge
+      document.getElementById("scoreBadgeNum").textContent = data.score;
 
       // Summary
       document.getElementById("summaryText").textContent = data.summary;
@@ -770,34 +938,36 @@ SADECE şu JSON formatında yanıt ver, başka hiçbir şey yazma:
       const sl = document.getElementById("strengthsList");
       sl.innerHTML = "";
       (data.strengths || []).forEach((s, i) => {
+        const num = String(i + 1).padStart(2, "0");
+        const isLast = i === (data.strengths.length - 1);
         sl.innerHTML += `
-          <div class="feedback-item strength">
-            <span class="feedback-icon">${strengthIcons[i] || "💪"}</span>
-            <div>
-              <div class="feedback-title">${s.title}</div>
-              <div class="feedback-detail">${s.detail}</div>
-            </div>
-          </div>`;
+          <div style="padding:12px 16px ${isLast ? "0" : "12px"} 16px;">
+            <div style="font-size:13px;font-weight:700;font-family:'Inter',sans-serif;color:#1a1a1a;margin-bottom:6px;letter-spacing:-0.13px;"><span style="color:#B7B7B7;">${num}.</span> ${s.title}</div>
+            <div style="font-size:13px;font-weight:400;font-family:'Inter',sans-serif;color:#444;line-height:21px;letter-spacing:-0.13px;">${s.detail}</div>
+          </div>
+          ${!isLast ? '<div style="height:1px;background:#C2E0CC;"></div>' : ""}
+        `;
       });
 
       // Improvements
       const il = document.getElementById("improvementsList");
       il.innerHTML = "";
       (data.improvements || []).forEach((imp, i) => {
+        const num = String(i + 1).padStart(2, "0");
+        const isLast = i === (data.improvements.length - 1);
         il.innerHTML += `
-          <div class="feedback-item improvement">
-            <span class="feedback-icon">${improvementIcons[i] || "🔧"}</span>
-            <div>
-              <div class="feedback-title">${imp.title}</div>
-              <div class="feedback-detail">${imp.detail}</div>
-            </div>
-          </div>`;
+          <div style="padding:12px 16px ${isLast ? "0" : "12px"} 16px;">
+            <div style="font-size:13px;font-weight:700;font-family:'Inter',sans-serif;color:#1a1a1a;margin-bottom:6px;letter-spacing:-0.13px;"><span style="color:#B7B7B7;">${num}.</span> ${imp.title}</div>
+            <div style="font-size:13px;font-weight:400;font-family:'Inter',sans-serif;color:#444;line-height:21px;letter-spacing:-0.13px;">${imp.detail}</div>
+          </div>
+          ${!isLast ? '<div style="height:1px;background:#FFDEC3;"></div>' : ""}
+        `;
       });
 
-      // Show card
-      const card = document.getElementById("resultCard");
-      card.classList.add("show");
-      card.scrollIntoView({ behavior: "smooth", block: "start" });
+      // Show panel + overlay
+      document.getElementById("resultCard").classList.add("show");
+      document.getElementById("panelOverlay").classList.add("show");
+      document.getElementById("scoreBadgeNum").textContent = data.score;
     }
 
     async function handleScore() {
@@ -823,6 +993,11 @@ SADECE şu JSON formatında yanıt ver, başka hiçbir şey yazma:
         });
         const parsed = await response.json();
         if (!response.ok) throw new Error(parsed.error || "Sunucu hatası");
+        if (parsed.score === 0 && parsed.strengths && parsed.strengths.length === 0) {
+          showToast("error", parsed.summary || "Geçerli bir makale bulunamadı.");
+          setLoading(false);
+          return;
+        }
         renderResult(parsed);
       } catch (e) {
         showToast("error", "Bir hata oluştu. Lütfen tekrar deneyin.");
