@@ -27,7 +27,7 @@ Eğer içerik:
 - Gerçek bir makale yapısı taşımıyorsa (giriş, gelişme, sonuç, başlık vb. yoksa)
 - Geçerli bir Medium URL'si değilse ve makale metni de değilse
 O zaman SADECE şu JSON'u döndür ve başka hiçbir şey yazma:
-{"score": 0, "grade": "F", "summary": "Geçerli bir makale veya Medium linki bulunamadı. Lütfen bir Medium makalesi linki girin veya makale metnini yapıştırın.", "strengths": [], "improvements": []}
+{"score": 0, "grade": "F", "summary": "Geçerli bir makale veya Medium linki bulunamadı.", "strengths": [], "improvements": []}
 
 Eğer içerik bir URL ise: O URL'deki makalenin başlığını ve konusunu URL'den çıkar, Medium platformundaki genel makale yapısını ve olası içeriği göz önünde bulundurarak değerlendirme yap. URL'yi ziyaret edemediğini belirtme, direkt analiz et.
 
