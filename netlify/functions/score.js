@@ -85,11 +85,24 @@ SADECE şu JSON formatında yanıt ver, başka hiçbir şey yazma:
     }
 
     const text = data.choices?.[0]?.message?.content || "";
-    const clean = text.replace(/```json|```/g, "").trim();
-    const parsed = JSON.parse(clean);
+    console.log("OpenAI raw response:", text);
+    
+    // Extract JSON from response - handle markdown code blocks
+    let jsonStr = text;
+    const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/);
+    if (jsonMatch) {
+      jsonStr = jsonMatch[1];
+    } else {
+      // Try to find raw JSON object
+      const objMatch = text.match(/\{[\s\S]*\}/);
+      if (objMatch) jsonStr = objMatch[0];
+    }
+    
+    const parsed = JSON.parse(jsonStr.trim());
 
     return { statusCode: 200, headers, body: JSON.stringify(parsed) };
   } catch (err) {
+    console.error("Function error:", err.message);
     return { statusCode: 500, headers, body: JSON.stringify({ error: err.message }) };
   }
 };
