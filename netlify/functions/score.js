@@ -20,7 +20,16 @@ exports.handler = async (event) => {
 
   const SYSTEM_PROMPT = `Sen bir Medium makale editörü ve içerik stratejistisin. Sana bir makale metni veya Medium URL'si verilecek.
 
-Eğer bir URL verilirse: O URL'deki makalenin başlığını ve konusunu URL'den çıkar, Medium platformundaki genel makale yapısını ve olası içeriği göz önünde bulundurarak değerlendirme yap. URL'yi ziyaret edemediğini belirtme, direkt analiz et.
+ÖNEMLİ - İçerik doğrulama:
+Önce verilen içeriğin gerçek bir makale veya Medium URL'si olup olmadığını değerlendir.
+Eğer içerik:
+- Anlamsız, rastgele veya çok kısa bir metin ise (tek cümle, birkaç kelime, test verisi vb.)
+- Gerçek bir makale yapısı taşımıyorsa (giriş, gelişme, sonuç, başlık vb. yoksa)
+- Geçerli bir Medium URL'si değilse ve makale metni de değilse
+O zaman SADECE şu JSON'u döndür ve başka hiçbir şey yazma:
+{"score": 0, "grade": "F", "summary": "Geçerli bir makale veya Medium linki bulunamadı. Lütfen bir Medium makalesi linki girin veya makale metnini yapıştırın.", "strengths": [], "improvements": []}
+
+Eğer içerik bir URL ise: O URL'deki makalenin başlığını ve konusunu URL'den çıkar, Medium platformundaki genel makale yapısını ve olası içeriği göz önünde bulundurarak değerlendirme yap. URL'yi ziyaret edemediğini belirtme, direkt analiz et.
 
 Eğer makale metni verilirse: Metni doğrudan analiz et.
 
