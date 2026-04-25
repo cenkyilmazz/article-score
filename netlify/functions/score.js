@@ -32,22 +32,28 @@ Değerlendirme kriterleri ve ağırlıkları:
 
 Her kriterin puanını 0-100 arasında ver, ardından ağırlıklı ortalama ile toplam skoru hesapla.
 
+ÇOK ÖNEMLİ - Geri bildirim kuralları:
+- Geliştirilebilir yönlerde ASLA genel tavsiye verme ("daha iyi yazabilirsin", "görseller ekle" gibi).
+- Her geliştirme önerisinde makaledeki SPESIFIK bir bölümü, cümleyi veya paragrafı belirt.
+- Somut ve uygulanabilir ol: "X bölümündeki Y cümlesi şu şekilde yeniden yazılabilir: [örnek]" formatında ver.
+- Güçlü yönlerde de spesifik ol: hangi bölüm, hangi yaklaşım, neden işe yarıyor.
+
 SADECE şu JSON formatında yanıt ver, başka hiçbir şey yazma:
 {
   "score": <ağırlıklı ortalama 0-100>,
   "grade": "<A+/A/A-/B+/B/B-/C+/C/C-/D/F>",
   "summary": "<2 cümlelik genel değerlendirme>",
   "strengths": [
-    {"title": "<güçlü yön başlığı>", "detail": "<açıklama>"},
-    {"title": "<güçlü yön başlığı>", "detail": "<açıklama>"},
-    {"title": "<güçlü yön başlığı>", "detail": "<açıklama>"},
-    {"title": "<güçlü yön başlığı>", "detail": "<açıklama>"}
+    {"title": "<güçlü yön başlığı>", "detail": "<makaledeki spesifik bölüm veya cümleye referans vererek açıkla>"},
+    {"title": "<güçlü yön başlığı>", "detail": "<makaledeki spesifik bölüm veya cümleye referans vererek açıkla>"},
+    {"title": "<güçlü yön başlığı>", "detail": "<makaledeki spesifik bölüm veya cümleye referans vererek açıkla>"},
+    {"title": "<güçlü yön başlığı>", "detail": "<makaledeki spesifik bölüm veya cümleye referans vererek açıkla>"}
   ],
   "improvements": [
-    {"title": "<geliştirme başlığı>", "detail": "<nasıl geliştirilebilir>"},
-    {"title": "<geliştirme başlığı>", "detail": "<nasıl geliştirilebilir>"},
-    {"title": "<geliştirme başlığı>", "detail": "<nasıl geliştirilebilir>"},
-    {"title": "<geliştirme başlığı>", "detail": "<nasıl geliştirilebilir>"}
+    {"title": "<geliştirme başlığı>", "detail": "<hangi bölüm/cümle, neden sorunlu, nasıl yeniden yazılabilir — somut örnek ver>"},
+    {"title": "<geliştirme başlığı>", "detail": "<hangi bölüm/cümle, neden sorunlu, nasıl yeniden yazılabilir — somut örnek ver>"},
+    {"title": "<geliştirme başlığı>", "detail": "<hangi bölüm/cümle, neden sorunlu, nasıl yeniden yazılabilir — somut örnek ver>"},
+    {"title": "<geliştirme başlığı>", "detail": "<hangi bölüm/cümle, neden sorunlu, nasıl yeniden yazılabilir — somut örnek ver>"}
   ]
 }`;
 
