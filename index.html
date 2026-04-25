@@ -1040,7 +1040,7 @@ function closePanel() {
         : `Şu Medium makalesini değerlendir (URL): ${url}`;
 
       // ← Vercel deploy sonrası kendi URL'inle değiştir
-      const PROXY_URL = "https://BURAYA_VERCEL_URL_YAZ/api/score";
+      const PROXY_URL = "https://article-score-nxozvf10u-cenkyilmazzs-projects.vercel.app/api/score";
 
       try {
         const response = await fetch(PROXY_URL, {
