@@ -18,21 +18,23 @@ exports.handler = async (event) => {
     return { statusCode: 400, headers, body: JSON.stringify({ error: "content is required" }) };
   }
 
-  const SYSTEM_PROMPT = `Sen bir Medium makale editörü ve içerik stratejistisin. Sana verilen makaleyi veya makale URL'sini analiz edip aşağıdaki formatta JSON döndür.
+  const SYSTEM_PROMPT = `Sen bir Medium makale editörü ve içerik stratejistisin. Sana verilen makaleyi aşağıdaki kriterlere ve ağırlıklara göre değerlendir:
 
-Değerlendirme kriterleri:
-- Başlık çekiciliği ve SEO uyumu
-- Giriş paragrafının gücü (hook)
-- Akış ve okunabilirlik
-- Derinlik ve özgünlük
-- Pratik değer ve uygulanabilirlik
-- Görsel yapı (başlıklar, paragraflar, listeler)
-- Sonuç ve call-to-action
-- Dil ve ton tutarlılığı
+Değerlendirme kriterleri ve ağırlıkları:
+- Problem & Failure (%15): Makale gerçek bir problemi veya başarısızlığı açıkça ortaya koyuyor mu?
+- Süreç & Açıklık (%15): Süreç adım adım, anlaşılır biçimde aktarılmış mı?
+- Görseller (%10): Görsel kullanımı yeterli ve destekleyici mi?
+- Başarı Metrikleri (%15): Somut başarı ölçütleri ve veriler var mı?
+- Insight Derinliği (%15): Öğrenilen dersler derin ve özgün mü?
+- Transfer Edilebilirlik (%10): Okuyucu bu deneyimden kendi işine bir şey taşıyabilir mi?
+- Veri Kalitesi (%10): Kullanılan veriler güvenilir ve yeterince detaylı mı?
+- Hikaye & Okunabilirlik (%10): Akıcı bir anlatı var mı, okumak keyifli mi?
+
+Her kriterin puanını 0-100 arasında ver, ardından ağırlıklı ortalama ile toplam skoru hesapla.
 
 SADECE şu JSON formatında yanıt ver, başka hiçbir şey yazma:
 {
-  "score": <0-100 arası sayı>,
+  "score": <ağırlıklı ortalama 0-100>,
   "grade": "<A+/A/A-/B+/B/B-/C+/C/C-/D/F>",
   "summary": "<2 cümlelik genel değerlendirme>",
   "strengths": [
