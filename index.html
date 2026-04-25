@@ -73,24 +73,27 @@
       margin-bottom: 4px;
     }
 
-    input[type="text"] {
+    input[type="text"], textarea {
       width: 346px;
       max-width: 100%;
-      height: 36px;
-      padding: 0 10px;
+      padding: 10px;
       border: 1px solid var(--border);
       border-radius: 6px;
       font-size: 14px;
-      font-family: 'DM Sans', sans-serif;
+      font-family: 'Inter', sans-serif;
+      font-weight: 400;
       outline: none;
       transition: border-color 0.2s;
       color: var(--black);
       background: #fff;
       box-shadow: 0 1px 2px rgba(26, 26, 26, 0.05);
       display: block;
+      resize: none;
+      line-height: 1.6;
     }
-    input[type="text"]:focus { border-color: #1a1a1a; box-shadow: none; outline: none; }
-    input[type="text"]:disabled { background: #f9f9f9; color: #aaa; }
+    input[type="text"] { height: 36px; padding: 0 10px; }
+    input[type="text"]:focus, textarea:focus { border-color: #1a1a1a; box-shadow: none; outline: none; }
+    input[type="text"]:disabled, textarea:disabled { background: #f9f9f9; color: #aaa; }
 
     .divider {
       display: flex;
@@ -451,8 +454,8 @@
   <!-- Input Card -->
   <div class="card">
     <div class="card-inner">
-      <label class="field-label">Medium Link</label>
-      <input type="text" id="urlInput" placeholder="https://medium.com/@kullanici/makale-basligi" />
+      <label class="field-label">Makale Metni</label>
+      <textarea id="urlInput" placeholder="Makale metnini buraya yapıştır..." rows="5"></textarea>
 
       <div class="divider">
         <div class="divider-line"></div>
@@ -642,6 +645,12 @@ SADECE şu JSON formatında yanıt ver, başka hiçbir şey yazma:
         urlInput.disabled = false;
       }
     });
+    
+    // Auto-resize textarea
+    urlInput.addEventListener("input", () => {
+      urlInput.style.height = "auto";
+      urlInput.style.height = Math.min(urlInput.scrollHeight, 200) + "px";
+    });
 
     const IMPORT_SVG = `<svg width="31" height="31" viewBox="0 0 35 35" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M17.5026 30.625L17.5026 13.125M17.5026 13.125L23.3359 18.9583M17.5026 13.125L11.6693 18.9583M23.3359 27.7083L29.1693 27.7083C29.9428 27.7083 30.6847 27.401 31.2317 26.8541C31.7787 26.3071 32.0859 25.5652 32.0859 24.7917L32.0859 10.2083C32.0859 9.43479 31.7787 8.69292 31.2317 8.14594C30.6847 7.59896 29.9428 7.29167 29.1693 7.29167L5.83594 7.29167C5.06239 7.29167 4.32053 7.59896 3.77355 8.14594C3.22656 8.69292 2.91927 9.43478 2.91927 10.2083L2.91927 24.7917C2.91927 25.5652 3.22656 26.3071 3.77354 26.8541C4.32053 27.401 5.06239 27.7083 5.83594 27.7083L11.6693 27.7083" stroke="#09090B" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
@@ -806,9 +815,8 @@ SADECE şu JSON formatında yanıt ver, başka hiçbir şey yazma:
       }
       setLoading(true);
 
-      const content = docText.trim()
-        ? `Aşağıdaki makale metnini değerlendir:\n\n${docText.slice(0, 6000)}`
-        : `Şu Medium makalesini değerlendir (URL): ${url}`;
+      const articleText = docText.trim() || pastedText;
+      const content = `Aşağıdaki makale metnini değerlendir:\n\n${articleText.slice(0, 8000)}`;
 
       // ← Vercel deploy sonrası kendi URL'inle değiştir
       const PROXY_URL = "https://article-score.netlify.app/.netlify/functions/score";
