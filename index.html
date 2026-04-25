@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Medium Article Score</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,900;1,9..144,300;1,9..144,900&family=DM+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --orange: #f97316;
+      --black: #1a1a1a;
+      --gray: #888;
+      --border: #e8e8e8;
+      --green-bg: #f0fdf4;
+      --green-border: #bbf7d0;
+      --orange-bg: #fff7ed;
+      --orange-border: #fed7aa;
+    }
+
+    html, body {
+      min-height: 100%;
+      background: #ffffff;
+      font-family: 'DM Sans', sans-serif;
+      color: var(--black);
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding-top: 90px;
+      padding-bottom: 100px;
+      padding-left: 16px;
+      padding-right: 16px;
+    }
+
+    /* ── Logo ── */
+    .logo-wrap {
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: center;
+    }
+    .logo-wrap svg {
+      width: 394px;
+      height: 120px;
+    }
+
+    /* ── Card ── */
+    .card {
+      width: 394px;
+      max-width: 100%;
+      background: #fff;
+      border: 1px solid #E6E6E6;
+      border-radius: 10px;
+      padding: 0 0 24px 0;
+      box-shadow: 0 1px 2px rgba(26, 26, 26, 0.05);
+    }
+
+    .card-inner {
+      padding: 24px 24px 0 24px;
+    }
+
+    label.field-label {
+      display: block;
+      font-size: 11px;
+      font-weight: 500;
+      font-family: 'Inter', 'DM Sans', sans-serif;
+      color: #555;
+      margin-bottom: 4px;
+    }
+
+    input[type="text"] {
+      width: 346px;
+      max-width: 100%;
+      height: 36px;
+      padding: 0 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 14px;
+      font-family: 'DM Sans', sans-serif;
+      outline: none;
+      transition: border-color 0.2s;
+      color: var(--black);
+      background: #fff;
+      box-shadow: 0 1px 2px rgba(26, 26, 26, 0.05);
+      display: block;
+    }
+    input[type="text"]:focus { border-color: #1a1a1a; box-shadow: none; outline: none; }
+    input[type="text"]:disabled { background: #f9f9f9; color: #aaa; }
+
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 8px;
+      margin-bottom: 8px;
+    }
+    .divider-line { flex: 1; height: 1px; background: var(--border); }
+    .divider-text {
+      font-size: 11px;
+      font-weight: 500;
+      font-family: 'Inter', sans-serif;
+      color: #9E9E9E;
+      letter-spacing: 0;
+    }
+
+    .dropzone {
+      width: 346px;
+      max-width: 100%;
+      border-radius: 8px;
+      padding: 0;
+      text-align: center;
+      cursor: pointer;
+      background: #fff;
+      transition: background 0.2s;
+      position: relative;
+      /* SVG dashed border: dash=5 gap=5, stroke=#D0D0D0, radius=8 */
+      background-image: url("data:image/svg+xml,%3Csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='100%25' height='100%25' rx='8' ry='8' fill='none' stroke='%23D0D0D0' stroke-width='1.5' stroke-dasharray='5%2C5' stroke-dashoffset='0'/%3E%3C/svg%3E");
+    }
+    .dropzone-inner {
+      padding-top: 24px;
+      padding-bottom: 28px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .dropzone:hover, .dropzone.drag-over { background-color: #fafafa; }
+    .dropzone.has-file {
+      background-color: #f0fdf4;
+      background-image: url("data:image/svg+xml,%3Csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='100%25' height='100%25' rx='8' ry='8' fill='none' stroke='%2322c55e' stroke-width='1.5' stroke-dasharray='5%2C5' stroke-dashoffset='0'/%3E%3C/svg%3E");
+    }
+    .dropzone-icon { display: flex; justify-content: center; margin-bottom: 4px; }
+    .dropzone-text {
+      font-size: 14px;
+      font-family: 'Inter', sans-serif;
+      font-weight: 400;
+      color: #1a1a1a;
+    }
+    .dropzone-sub { font-size: 11px; color: #bbb; margin-top: 4px; }
+    .dropzone-filename { font-size: 13px; font-weight: 600; color: #16a34a; }
+    .dropzone-change { font-size: 11px; color: #888; margin-top: 4px; }
+
+    .error-msg { color: #ef4444; font-size: 13px; margin-top: 12px; text-align: center; display: none; }
+    .error-msg.show { display: block; }
+
+    .btn-score {
+      width: 346px;
+      max-width: 100%;
+      margin-top: 20px;
+      padding: 10px 14px;
+      background: var(--black);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 700;
+      font-family: 'DM Sans', sans-serif;
+      cursor: pointer;
+      letter-spacing: 0.3px;
+      transition: background 0.2s, transform 0.1s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .btn-score:hover { background: #333; }
+    .btn-score:active { transform: scale(0.99); }
+    .btn-score:disabled { background: #555; cursor: not-allowed; }
+
+    .spinner {
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      display: none;
+    }
+
+    /* ── Result Card ── */
+    .result-card {
+      width: 394px;
+      max-width: 100%;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 32px;
+      box-shadow: 0 2px 28px rgba(0,0,0,0.06);
+      margin-top: 24px;
+      display: none;
+      animation: fadeUp 0.5s ease;
+    }
+    .result-card.show { display: block; }
+
+    .score-header {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+
+    .score-ring-wrap { position: relative; width: 140px; height: 140px; flex-shrink: 0; }
+    .score-ring-wrap svg { transform: rotate(-90deg); }
+    .score-ring-inner {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .score-number {
+      font-size: 32px;
+      font-weight: 800;
+      font-family: 'Fraunces', serif;
+      line-height: 1;
+    }
+    .score-denom { font-size: 11px; color: #888; letter-spacing: 1px; margin-top: 2px; }
+
+    .score-meta { flex: 1; min-width: 160px; }
+    .grade-row { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+    .grade-letter { font-size: 36px; font-weight: 900; font-family: 'Fraunces', serif; line-height: 1; }
+    .grade-label { font-size: 13px; color: #888; }
+    .summary-text { font-size: 13.5px; color: #444; line-height: 1.65; }
+
+    .section-title {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .section-title.green { color: #16a34a; }
+    .section-title.orange { color: #ea580c; }
+
+    .feedback-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+    .feedback-item {
+      border-radius: 14px;
+      padding: 16px 18px;
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+    }
+    .feedback-item.strength { background: var(--green-bg); border: 1px solid var(--green-border); }
+    .feedback-item.improvement { background: var(--orange-bg); border: 1px solid var(--orange-border); }
+    .feedback-icon { font-size: 20px; flex-shrink: 0; margin-top: 1px; }
+    .feedback-title { font-weight: 700; font-size: 14px; color: var(--black); margin-bottom: 4px; }
+    .feedback-detail { font-size: 13px; color: #555; line-height: 1.6; }
+
+    /* ── Sticky bottom MEDIUM ── */
+    .bottom-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      overflow: hidden;
+      line-height: 0;
+      pointer-events: none;
+      z-index: 100;
+    }
+    .bottom-bar svg {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    /* ── Animations ── */
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 540px) {
+      .logo-wrap svg { width: 260px; }
+      .card, .result-card { padding: 20px; }
+      .score-header { gap: 16px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Logo -->
+  <div class="logo-wrap">
+    <svg width="394" height="120" viewBox="0 0 394 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M65.0941 90.16L61.5569 80.44H44.2904L40.7531 90.16H32L48.3072 47.62H57.8997L74.087 90.16H65.0941ZM52.9236 56.8L47.0482 72.88H58.799L52.9236 56.8Z" fill="black"/>
+      <path d="M94.9943 60.52V68.56C94.095 68.38 93.3156 68.32 92.5961 68.32C88.5193 68.32 84.9821 70.3 84.9821 76.66V90.16H77.0083V60.64H84.7423V65.02C86.5409 61.12 90.6177 60.4 93.1357 60.4C93.7952 60.4 94.3947 60.46 94.9943 60.52Z" fill="black"/>
+      <path d="M109.808 51.82V60.64H115.743V67.72H109.808V80.08C109.808 82.66 111.007 83.5 113.285 83.5C114.244 83.5 115.324 83.38 115.743 83.26V89.86C115.024 90.16 113.585 90.58 111.247 90.58C105.491 90.58 101.894 87.16 101.894 81.46V67.72H96.5582V60.64H98.057C101.175 60.64 102.613 58.6 102.613 55.96V51.82H109.808Z" fill="black"/>
+      <path d="M128.692 90.16H120.718V60.64H128.692V90.16ZM119.759 50.98C119.759 48.22 121.977 46 124.675 46C127.433 46 129.591 48.22 129.591 50.98C129.591 53.62 127.433 55.84 124.675 55.84C121.977 55.84 119.759 53.62 119.759 50.98Z" fill="black"/>
+      <path d="M148.679 67.12C144.603 67.12 141.185 70.06 141.185 75.4C141.185 80.74 144.663 83.74 148.739 83.74C152.816 83.74 154.855 81.04 155.514 78.76L162.529 81.1C161.21 86.02 156.593 91.06 148.739 91.06C140.046 91.06 133.212 84.46 133.212 75.4C133.212 66.28 139.926 59.74 148.5 59.74C156.533 59.74 161.09 64.72 162.349 69.7L155.214 72.1C154.495 69.64 152.636 67.12 148.679 67.12Z" fill="black"/>
+      <path d="M174.567 90.16H166.594V46.72H174.567V90.16Z" fill="black"/>
+      <path d="M187.121 72.04H200.311C200.191 69.1 198.272 66.22 193.716 66.22C189.579 66.22 187.301 69.34 187.121 72.04ZM201.09 79.72L207.745 81.7C206.246 86.8 201.57 91.06 194.315 91.06C186.222 91.06 179.087 85.24 179.087 75.28C179.087 65.86 186.042 59.74 193.596 59.74C202.709 59.74 208.165 65.56 208.165 75.04C208.165 76.18 208.045 77.38 208.045 77.5H186.941C187.121 81.4 190.418 84.22 194.375 84.22C198.092 84.22 200.131 82.36 201.09 79.72Z" fill="black"/>
+      <path d="M233.233 83.86C237.31 83.86 239.768 81.7 239.828 78.64C239.828 76.66 238.869 75.04 236.231 73.9L231.075 71.62C225.679 69.22 222.861 65.5 222.861 60.22C222.861 52.24 229.696 46.78 237.91 46.78C249.181 46.78 252.358 54.58 252.358 59.08L244.624 60.4C244.624 58.78 243.905 53.98 237.55 53.98C233.773 53.98 231.195 56.56 231.195 59.38C231.195 61.66 232.634 63.22 234.552 64.06L239.468 66.22C245.763 68.98 248.341 72.88 248.341 77.98C248.341 84.64 242.766 91.06 233.353 91.06C221.602 91.06 217.346 83.08 217.346 77.14C217.346 76.9 217.346 76.3 217.466 75.88L225.199 74.56C225.14 75.1 225.14 75.34 225.14 75.82C225.14 79.78 227.478 83.74 233.233 83.86Z" fill="black"/>
+      <path d="M280.178 69.64L272.984 71.8C272.504 69.34 270.586 67 266.869 67C262.972 67 258.715 70.36 258.715 77.02C258.715 81.28 261.353 83.8 265.25 83.8C268.727 83.8 270.766 81.7 271.905 79.48L278.5 82.06C276.401 86.68 271.845 91.06 264.77 91.06C256.737 91.06 250.801 85.54 250.801 77.2C250.801 66.64 258.655 59.74 267.408 59.74C275.442 59.74 279.279 64.84 280.178 69.64Z" fill="black"/>
+      <path d="M296.51 67C291.954 67 288.537 71.32 288.537 76.96C288.537 81.22 291.055 83.8 294.592 83.8C298.309 83.8 302.566 80.5 302.566 73.78C302.566 69.46 300.167 67 296.51 67ZM310.539 73.48C310.539 83.02 303.705 91.06 294.052 91.06C285.839 91.06 280.563 85 280.563 77.32C280.563 66.88 287.997 59.74 297.11 59.74C305.503 59.74 310.539 65.8 310.539 73.48Z" fill="black"/>
+      <path d="M333.841 68.74C332.882 68.5 331.922 68.32 330.963 68.32C327.426 68.32 323.829 70.12 322.45 76.54L319.512 90.16H311.598L316.754 65.68C317.354 62.92 317.414 61.06 317.414 60.64H325.148C325.148 61.18 325.088 63.1 324.788 64.3C326.347 62.08 328.805 60.46 333.002 60.46C334.021 60.46 334.86 60.58 335.52 60.7L333.841 68.74Z" fill="black"/>
+      <path d="M342.499 72.04H355.449C355.509 71.62 355.509 71.44 355.509 71.32C355.509 69.1 354.07 66.22 349.933 66.22C345.916 66.22 343.458 68.86 342.499 72.04ZM362.164 77.5L341.66 77.56C341.66 81.4 343.938 84.4 348.255 84.4C351.492 84.4 353.77 82.6 354.849 80.56L360.965 83.62C359.046 87.46 354.67 91.06 347.775 91.06C340.401 91.06 334.226 85.78 334.226 77.44C334.226 66.52 342.139 59.74 350.053 59.74C358.267 59.74 363.003 64.96 363.003 72.16C363.003 73.9 362.643 75.94 362.164 77.5Z" fill="black"/>
+      <rect x="147.906" width="97.9233" height="25" rx="12.5" fill="url(#paint0_radial_logo)"/>
+      <path d="M176.523 18.7131H174.18V9.80138L170.666 18.7131H168.686L165.172 9.8731V18.7131H162.898V6H166.033L169.702 15.1807L173.284 6H176.523V18.7131Z" fill="white"/>
+      <path d="M186.618 18.7131H178.971V6H186.618V8.33103H181.347V11.2359H186.118V13.4414H181.347V16.3821H186.618V18.7131Z" fill="white"/>
+      <path d="M191.028 16.4179H192.922C194.92 16.4179 196.591 15.1269 196.591 12.3655C196.591 9.60414 194.938 8.29517 192.94 8.29517H191.028V16.4179ZM193.009 18.7131H188.651V6H193.026C196.505 6 199.054 8.34897 199.054 12.3655C199.054 16.3821 196.488 18.7131 193.009 18.7131Z" fill="white"/>
+      <path d="M203.182 18.7131H200.77V6H203.182V18.7131Z" fill="white"/>
+      <path d="M210.188 19C207.587 19 205.503 17.3324 205.503 14.2124V6H207.88V14.0331C207.88 15.7007 208.775 16.5793 210.188 16.5793C211.634 16.5793 212.513 15.7007 212.513 14.0331V6H214.89V14.2124C214.89 17.3324 212.806 19 210.188 19Z" fill="white"/>
+      <path d="M230.845 18.7131H228.503V9.80138L224.989 18.7131H223.008L219.495 9.8731V18.7131H217.221V6H220.356L224.025 15.1807L227.607 6H230.845V18.7131Z" fill="white"/>
+      <rect y="12" width="141" height="1" fill="black"/>
+      <rect x="253" y="12" width="141" height="1" fill="black"/>
+      <circle cx="197" cy="111" r="3" fill="#ACACAC"/>
+      <circle cx="197" cy="117" r="3" fill="black"/>
+      <defs>
+        <radialGradient id="paint0_radial_logo" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(195.389 12.9167) rotate(90) scale(20.3935 79.88)">
+          <stop offset="0.423077" stop-color="#F37919"/>
+          <stop offset="0.995192" stop-color="#FD3402"/>
+        </radialGradient>
+      </defs>
+    </svg>
+  </div>
+
+  <!-- Input Card -->
+  <div class="card">
+    <div class="card-inner">
+      <label class="field-label">Medium Link</label>
+      <input type="text" id="urlInput" placeholder="https://medium.com/@kullanici/makale-basligi" />
+
+      <div class="divider">
+        <div class="divider-line"></div>
+        <span class="divider-text">VEYA</span>
+        <div class="divider-line"></div>
+      </div>
+
+      <div class="dropzone" id="dropzone">
+        <input type="file" id="fileInput" accept=".txt,.md,.html" style="display:none" />
+        <div class="dropzone-inner">
+          <div class="dropzone-icon" id="dzIcon">
+            <svg width="35" height="35" viewBox="0 0 35 35" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M17.5026 30.625L17.5026 13.125M17.5026 13.125L23.3359 18.9583M17.5026 13.125L11.6693 18.9583M23.3359 27.7083L29.1693 27.7083C29.9428 27.7083 30.6847 27.401 31.2317 26.8541C31.7787 26.3071 32.0859 25.5652 32.0859 24.7917L32.0859 10.2083C32.0859 9.43479 31.7787 8.69292 31.2317 8.14594C30.6847 7.59896 29.9428 7.29167 29.1693 7.29167L5.83594 7.29167C5.06239 7.29167 4.32053 7.59896 3.77355 8.14594C3.22656 8.69292 2.91927 9.43478 2.91927 10.2083L2.91927 24.7917C2.91927 25.5652 3.22656 26.3071 3.77354 26.8541C4.32053 27.401 5.06239 27.7083 5.83594 27.7083L11.6693 27.7083" stroke="#09090B" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="dropzone-text" id="dzText">Dokümanını buraya sürükle veya tıkla</div>
+        </div>
+      </div>
+
+      <div class="error-msg" id="errorMsg">Lütfen bir Medium linki girin veya doküman yükleyin.</div>
+
+      <button class="btn-score" id="scoreBtn" onclick="handleScore()">
+        <span class="spinner" id="spinner"></span>
+        <span id="btnText">Makaleyi puanla →</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Result -->
+  <div class="result-card" id="resultCard">
+    <div class="score-header">
+      <div class="score-ring-wrap">
+        <svg width="140" height="140" viewBox="0 0 140 140">
+          <circle cx="70" cy="70" r="54" fill="none" stroke="#f1f0ee" stroke-width="10"/>
+          <circle id="scoreCircle" cx="70" cy="70" r="54" fill="none" stroke="#22c55e" stroke-width="10"
+            stroke-dasharray="339.29" stroke-dashoffset="339.29" stroke-linecap="round"
+            style="transition: stroke-dashoffset 1.2s cubic-bezier(0.4,0,0.2,1), stroke 0.4s"/>
+        </svg>
+        <div class="score-ring-inner">
+          <span class="score-number" id="scoreNumber">0</span>
+          <span class="score-denom">/ 100</span>
+        </div>
+      </div>
+      <div class="score-meta">
+        <div class="grade-row">
+          <span class="grade-letter" id="gradeLetter">—</span>
+          <span class="grade-label">Genel Not</span>
+        </div>
+        <p class="summary-text" id="summaryText"></p>
+      </div>
+    </div>
+
+    <div class="section-title green">💚 GÜÇLÜ YÖNLER</div>
+    <div class="feedback-list" id="strengthsList"></div>
+
+    <div class="section-title orange">🔶 GELİŞTİRİLEBİLİR YÖNLER</div>
+    <div class="feedback-list" id="improvementsList"></div>
+  </div>
+
+  <!-- Sticky bottom MEDIUM bar -->
+  <div class="bottom-bar">
+    <svg viewBox="0 0 1440 22" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+      <path d="M0 0H5.03502L11.778 15.7037H12.0441L18.7871 0H23.8221V21.672H19.8739V6.78307H19.6632L13.3861 21.6085H10.436L4.15888 6.75132H3.94817V21.672H0V0Z" fill="black"/>
+      <path d="M291.263 21.672V0H306.035V3.29101H295.377V9.1746H305.27V12.4656H295.377V18.381H306.124V21.672H291.263Z" fill="black"/>
+      <path d="M580.89 21.672H573.193V0H581.045C583.3 0 585.237 0.433863 586.856 1.30159C588.483 2.16226 589.732 3.40035 590.605 5.01587C591.477 6.63139 591.914 8.56437 591.914 10.8148C591.914 13.0723 591.474 15.0123 590.594 16.6349C589.721 18.2575 588.461 19.5026 586.812 20.3704C585.171 21.2381 583.197 21.672 580.89 21.672ZM577.308 18.2751H580.69C582.272 18.2751 583.592 18 584.649 17.4497C585.707 16.8924 586.502 16.0635 587.034 14.963C587.566 13.8554 587.832 12.4727 587.832 10.8148C587.832 9.15697 587.566 7.78131 587.034 6.68783C586.502 5.5873 585.714 4.76543 584.672 4.22222C583.637 3.67196 582.35 3.39683 580.812 3.39683H577.308V18.2751Z" fill="black"/>
+      <path d="M862.898 0V21.672H858.783V0H862.898Z" fill="black"/>
+      <path d="M1144.63 0H1148.75V14.1587C1148.75 15.7108 1148.36 17.0758 1147.59 18.254C1146.83 19.4321 1145.76 20.3527 1144.38 21.0159C1142.99 21.672 1141.38 22 1139.53 22C1137.67 22 1136.05 21.672 1134.67 21.0159C1133.29 20.3527 1132.22 19.4321 1131.46 18.254C1130.69 17.0758 1130.31 15.7108 1130.31 14.1587V0H1134.43V13.8307C1134.43 14.7337 1134.63 15.5379 1135.05 16.2434C1135.47 16.9489 1136.06 17.5026 1136.82 17.9048C1137.59 18.2998 1138.49 18.4974 1139.53 18.4974C1140.57 18.4974 1141.47 18.2998 1142.24 17.9048C1143 17.5026 1143.6 16.9489 1144.01 16.2434C1144.42 15.5379 1144.63 14.7337 1144.63 13.8307V0Z" fill="black"/>
+      <path d="M1416.18 0H1421.21L1427.96 15.7037H1428.22L1434.97 0H1440V21.672H1436.05V6.78307H1435.84L1429.56 21.6085H1426.61L1420.34 6.75132H1420.13V21.672H1416.18V0Z" fill="black"/>
+    </svg>
+  </div>
+
+  <script>
+    const SCORE_PROMPT = `Sen bir Medium makale editörü ve içerik stratejistisin. Sana verilen makaleyi veya makale URL'sini analiz edip aşağıdaki formatta JSON döndür.
+
+Değerlendirme kriterleri:
+- Başlık çekiciliği ve SEO uyumu
+- Giriş paragrafının gücü (hook)
+- Akış ve okunabilirlik
+- Derinlik ve özgünlük
+- Pratik değer ve uygulanabilirlik
+- Görsel yapı (başlıklar, paragraflar, listeler)
+- Sonuç ve call-to-action
+- Dil ve ton tutarlılığı
+
+SADECE şu JSON formatında yanıt ver, başka hiçbir şey yazma:
+{
+  "score": <0-100 arası sayı>,
+  "grade": "<A+/A/A-/B+/B/B-/C+/C/C-/D/F>",
+  "summary": "<2 cümlelik genel değerlendirme>",
+  "strengths": [
+    {"title": "<güçlü yön başlığı>", "detail": "<açıklama>"},
+    {"title": "<güçlü yön başlığı>", "detail": "<açıklama>"},
+    {"title": "<güçlü yön başlığı>", "detail": "<açıklama>"},
+    {"title": "<güçlü yön başlığı>", "detail": "<açıklama>"}
+  ],
+  "improvements": [
+    {"title": "<geliştirme başlığı>", "detail": "<nasıl geliştirilebilir>"},
+    {"title": "<geliştirme başlığı>", "detail": "<nasıl geliştirilebilir>"},
+    {"title": "<geliştirme başlığı>", "detail": "<nasıl geliştirilebilir>"},
+    {"title": "<geliştirme başlığı>", "detail": "<nasıl geliştirilebilir>"}
+  ]
+}`;
+
+    const strengthIcons = ["💪", "✨", "🎯", "🚀"];
+    const improvementIcons = ["🔧", "💡", "📈", "🎨"];
+
+    let docText = "";
+    let fileName = "";
+
+    // Dropzone interactions
+    const dropzone = document.getElementById("dropzone");
+    const fileInput = document.getElementById("fileInput");
+    const urlInput = document.getElementById("urlInput");
+
+    dropzone.addEventListener("click", () => fileInput.click());
+
+    dropzone.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      dropzone.classList.add("drag-over");
+    });
+    dropzone.addEventListener("dragleave", () => dropzone.classList.remove("drag-over"));
+    dropzone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      dropzone.classList.remove("drag-over");
+      const file = e.dataTransfer.files[0];
+      if (file) handleFile(file);
+    });
+
+    fileInput.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (file) handleFile(file);
+    });
+
+    urlInput.addEventListener("input", () => {
+      if (urlInput.value.trim()) {
+        docText = "";
+        fileName = "";
+        resetDropzone();
+        urlInput.disabled = false;
+      }
+    });
+
+    const IMPORT_SVG = `<svg width="35" height="35" viewBox="0 0 35 35" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M17.5026 30.625L17.5026 13.125M17.5026 13.125L23.3359 18.9583M17.5026 13.125L11.6693 18.9583M23.3359 27.7083L29.1693 27.7083C29.9428 27.7083 30.6847 27.401 31.2317 26.8541C31.7787 26.3071 32.0859 25.5652 32.0859 24.7917L32.0859 10.2083C32.0859 9.43479 31.7787 8.69292 31.2317 8.14594C30.6847 7.59896 29.9428 7.29167 29.1693 7.29167L5.83594 7.29167C5.06239 7.29167 4.32053 7.59896 3.77355 8.14594C3.22656 8.69292 2.91927 9.43478 2.91927 10.2083L2.91927 24.7917C2.91927 25.5652 3.22656 26.3071 3.77354 26.8541C4.32053 27.401 5.06239 27.7083 5.83594 27.7083L11.6693 27.7083" stroke="#09090B" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+
+    function handleFile(file) {
+      fileName = file.name;
+      urlInput.value = "";
+      urlInput.disabled = true;
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        docText = e.target.result;
+        dropzone.classList.add("has-file");
+        document.getElementById("dzIcon").innerHTML = `<span style="font-size:28px">📄</span>`;
+        document.getElementById("dzText").className = "dropzone-filename";
+        document.getElementById("dzText").textContent = fileName;
+      };
+      reader.readAsText(file);
+    }
+
+    function resetDropzone() {
+      dropzone.classList.remove("has-file");
+      document.getElementById("dzIcon").innerHTML = IMPORT_SVG;
+      document.getElementById("dzText").className = "dropzone-text";
+      document.getElementById("dzText").textContent = "Dokümanını buraya sürükle veya tıkla";
+    }
+
+    function setLoading(on) {
+      const btn = document.getElementById("scoreBtn");
+      const spinner = document.getElementById("spinner");
+      const btnText = document.getElementById("btnText");
+      btn.disabled = on;
+      spinner.style.display = on ? "inline-block" : "none";
+      btnText.textContent = on ? "Analiz ediliyor..." : "Makaleyi puanla →";
+    }
+
+    function getGradeColor(grade) {
+      if (!grade) return "#1a1a1a";
+      if (grade.startsWith("A")) return "#16a34a";
+      if (grade.startsWith("B")) return "#2563eb";
+      if (grade.startsWith("C")) return "#d97706";
+      return "#dc2626";
+    }
+
+    function getScoreColor(score) {
+      if (score >= 80) return "#22c55e";
+      if (score >= 60) return "#f97316";
+      if (score >= 40) return "#eab308";
+      return "#ef4444";
+    }
+
+    function animateScore(score) {
+      const circle = document.getElementById("scoreCircle");
+      const numEl = document.getElementById("scoreNumber");
+      const circumference = 339.29;
+      const offset = circumference - (score / 100) * circumference;
+      circle.style.stroke = getScoreColor(score);
+
+      // Animate number
+      let current = 0;
+      const step = score / 60;
+      const interval = setInterval(() => {
+        current = Math.min(current + step, score);
+        numEl.textContent = Math.round(current);
+        if (current >= score) clearInterval(interval);
+      }, 16);
+
+      // Animate ring after short delay
+      setTimeout(() => {
+        circle.style.strokeDashoffset = offset;
+      }, 100);
+    }
+
+    function renderResult(data) {
+      // Score ring
+      animateScore(data.score);
+
+      // Grade
+      const gradeLetter = document.getElementById("gradeLetter");
+      gradeLetter.textContent = data.grade;
+      gradeLetter.style.color = getGradeColor(data.grade);
+
+      // Summary
+      document.getElementById("summaryText").textContent = data.summary;
+
+      // Strengths
+      const sl = document.getElementById("strengthsList");
+      sl.innerHTML = "";
+      (data.strengths || []).forEach((s, i) => {
+        sl.innerHTML += `
+          <div class="feedback-item strength">
+            <span class="feedback-icon">${strengthIcons[i] || "💪"}</span>
+            <div>
+              <div class="feedback-title">${s.title}</div>
+              <div class="feedback-detail">${s.detail}</div>
+            </div>
+          </div>`;
+      });
+
+      // Improvements
+      const il = document.getElementById("improvementsList");
+      il.innerHTML = "";
+      (data.improvements || []).forEach((imp, i) => {
+        il.innerHTML += `
+          <div class="feedback-item improvement">
+            <span class="feedback-icon">${improvementIcons[i] || "🔧"}</span>
+            <div>
+              <div class="feedback-title">${imp.title}</div>
+              <div class="feedback-detail">${imp.detail}</div>
+            </div>
+          </div>`;
+      });
+
+      // Show card
+      const card = document.getElementById("resultCard");
+      card.classList.add("show");
+      card.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    async function handleScore() {
+      const url = urlInput.value.trim();
+      const errEl = document.getElementById("errorMsg");
+
+      if (!url && !docText.trim()) {
+        errEl.classList.add("show");
+        return;
+      }
+      errEl.classList.remove("show");
+      setLoading(true);
+
+      const content = docText.trim()
+        ? `Aşağıdaki makale metnini değerlendir:\n\n${docText.slice(0, 6000)}`
+        : `Şu Medium makalesini değerlendir (URL): ${url}`;
+
+      try {
+        const response = await fetch("https://api.anthropic.com/v1/messages", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model: "claude-sonnet-4-20250514",
+            max_tokens: 1000,
+            system: SCORE_PROMPT,
+            messages: [{ role: "user", content }],
+          }),
+        });
+        const data = await response.json();
+        const text = (data.content || []).map(b => b.text || "").join("");
+        const clean = text.replace(/```json|```/g, "").trim();
+        const parsed = JSON.parse(clean);
+        renderResult(parsed);
+      } catch (e) {
+        errEl.textContent = "Bir hata oluştu. Lütfen tekrar deneyin.";
+        errEl.classList.add("show");
+      } finally {
+        setLoading(false);
+      }
+    }
+  </script>
+</body>
+</html>
