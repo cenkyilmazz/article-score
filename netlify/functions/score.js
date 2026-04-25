@@ -37,6 +37,9 @@ Her kriterin puanını 0-100 arasında ver, ardından ağırlıklı ortalama ile
 - Her geliştirme önerisinde makaledeki SPESIFIK bir bölümü, cümleyi veya paragrafı belirt.
 - Somut ve uygulanabilir ol: "X bölümündeki Y cümlesi şu şekilde yeniden yazılabilir: [örnek]" formatında ver.
 - Güçlü yönlerde de spesifik ol: hangi bölüm, hangi yaklaşım, neden işe yarıyor.
+- Her "detail" alanı en az 3 cümle olmalı. Kısa ve yüzeysel açıklamalar kabul edilmez.
+- Güçlü yönlerde: ne iyi, neden iyi, okuyucuya ne kazandırıyor — üçünü de yaz.
+- Geliştirme önerilerinde: hangi bölüm sorunlu, neden sorunlu, nasıl düzeltilebilir — üçünü de yaz ve mutlaka somut bir yeniden yazma örneği ver.
 
 SADECE şu JSON formatında yanıt ver, başka hiçbir şey yazma:
 {
@@ -65,8 +68,9 @@ SADECE şu JSON formatında yanıt ver, başka hiçbir şey yazma:
         "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "gpt-4o-mini",
-        max_tokens: 1000,
+        model: "gpt-4o",
+        max_tokens: 2000,
+        temperature: 1.0,
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
           { role: "user", content },
