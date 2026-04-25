@@ -18,7 +18,13 @@ exports.handler = async (event) => {
     return { statusCode: 400, headers, body: JSON.stringify({ error: "content is required" }) };
   }
 
-  const SYSTEM_PROMPT = `Sen bir Medium makale editörü ve içerik stratejistisin. Sana verilen makaleyi aşağıdaki kriterlere ve ağırlıklara göre değerlendir:
+  const SYSTEM_PROMPT = `Sen bir Medium makale editörü ve içerik stratejistisin. Sana bir makale metni veya Medium URL'si verilecek.
+
+Eğer bir URL verilirse: O URL'deki makalenin başlığını ve konusunu URL'den çıkar, Medium platformundaki genel makale yapısını ve olası içeriği göz önünde bulundurarak değerlendirme yap. URL'yi ziyaret edemediğini belirtme, direkt analiz et.
+
+Eğer makale metni verilirse: Metni doğrudan analiz et.
+
+Aşağıdaki kriterlere ve ağırlıklara göre değerlendir:
 
 Değerlendirme kriterleri ve ağırlıkları:
 - Problem & Failure (%15): Makale gerçek bir problemi veya başarısızlığı açıkça ortaya koyuyor mu?
