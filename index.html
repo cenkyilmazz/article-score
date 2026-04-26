@@ -394,17 +394,17 @@
         </div>
 
         <!-- Reader Perspective card -->
-        <div id="readerPerspectiveCard" style="display:none; width:578px; margin-top:16px; background:#fff; border:1px solid #E6E6E6; border-radius:10px; box-shadow:0 1px 2px rgba(26,26,26,0.05); overflow:hidden; padding-bottom:12px;">
-          <div style="padding:12px 16px 0 16px; font-size:14px; font-weight:600; font-family:'Inter',sans-serif; color:#1a1a1a;">Okuyucu Perspektifi</div>
-          <div style="margin-top:10px; height:1px; background:#E6E6E6;"></div>
-          <div id="readerPerspectiveContent" style="margin:8px 16px 0 16px; font-size:13px; font-weight:400; font-family:'Inter',sans-serif; color:#444; line-height:21px; letter-spacing:-0.13px;"></div>
+        <div id="readerPerspectiveCard" style="display:none; width:578px; margin-top:16px; background:#fff; border:1px solid #B3E5FD; border-radius:10px; box-shadow:0 1px 2px rgba(26,26,26,0.05); overflow:hidden; padding-bottom:12px;">
+          <div style="padding:12px 16px 10px 16px; font-size:13px; font-weight:600; font-family:'Inter',sans-serif; color:#3090BD; background:#E8F7FE; margin-top:0;">Okuyucu Perspektifi</div>
+          <div style="height:1px; background:#B3E5FD;"></div>
+          <div id="readerPerspectiveContent" style="font-size:13px; font-weight:400; font-family:'Inter',sans-serif; color:#444; line-height:21px; letter-spacing:-0.13px;"></div>
         </div>
 
         <!-- Headline & Hook card -->
-        <div id="headlineHookCard" style="display:none; width:578px; margin-top:16px; background:#fff; border:1px solid #E6E6E6; border-radius:10px; box-shadow:0 1px 2px rgba(26,26,26,0.05); overflow:hidden; padding-bottom:12px;">
-          <div style="padding:12px 16px 0 16px; font-size:14px; font-weight:600; font-family:'Inter',sans-serif; color:#1a1a1a;">Başlık & Hook</div>
-          <div style="margin-top:10px; height:1px; background:#E6E6E6;"></div>
-          <div id="headlineHookContent" style="margin:8px 16px 0 16px; font-size:13px; font-weight:400; font-family:'Inter',sans-serif; color:#444; line-height:21px; letter-spacing:-0.13px;"></div>
+        <div id="headlineHookCard" style="display:none; width:578px; margin-top:16px; background:#fff; border:1px solid #D3CCFF; border-radius:10px; box-shadow:0 1px 2px rgba(26,26,26,0.05); overflow:hidden; padding-bottom:12px;">
+          <div style="padding:12px 16px 10px 16px; font-size:13px; font-weight:600; font-family:'Inter',sans-serif; color:#6857D8; background:#EBE8FE;">Başlık & Hook</div>
+          <div style="height:1px; background:#D3CCFF;"></div>
+          <div id="headlineHookContent" style="font-size:13px; font-weight:400; font-family:'Inter',sans-serif; color:#444; line-height:21px; letter-spacing:-0.13px;"></div>
         </div>
 
       </div>
@@ -568,7 +568,7 @@
       (data.strengths || []).forEach((s, i) => {
         const num = String(i + 1).padStart(2, "0");
         const isLast = i === (data.strengths.length - 1);
-        sl.innerHTML += `<div style="padding:12px 16px ${isLast?"0":"12px"} 16px;"><div style="font-size:13px;font-weight:700;font-family:'Inter',sans-serif;color:#1a1a1a;margin-bottom:6px;letter-spacing:-0.13px;"><span style="color:#B7B7B7;">${num}.</span> ${s.title}</div><div style="font-size:13px;font-weight:400;font-family:'Inter',sans-serif;color:#444;line-height:21px;letter-spacing:-0.13px;">${s.detail}</div></div>${!isLast?'<div style="height:1px;background:#C2E0CC;"></div>':""}`;
+        sl.innerHTML += `<div style="padding:12px 16px ${isLast?"0":"12px"} 16px;"><div style="font-size:13px;font-weight:700;font-family:'Inter',sans-serif;color:#1a1a1a;margin-bottom:6px;letter-spacing:-0.13px;">${s.title}</div><div style="font-size:13px;font-weight:400;font-family:'Inter',sans-serif;color:#444;line-height:21px;letter-spacing:-0.13px;">${s.detail}</div></div>${!isLast?'<div style="height:1px;background:#C2E0CC;"></div>':""}`;
       });
 
       const il = document.getElementById("improvementsList");
@@ -576,55 +576,109 @@
       (data.improvements || []).forEach((imp, i) => {
         const num = String(i + 1).padStart(2, "0");
         const isLast = i === (data.improvements.length - 1);
-        il.innerHTML += `<div style="padding:12px 16px ${isLast?"0":"12px"} 16px;"><div style="font-size:13px;font-weight:700;font-family:'Inter',sans-serif;color:#1a1a1a;margin-bottom:6px;letter-spacing:-0.13px;"><span style="color:#B7B7B7;">${num}.</span> ${imp.title}</div><div style="font-size:13px;font-weight:400;font-family:'Inter',sans-serif;color:#444;line-height:21px;letter-spacing:-0.13px;">${imp.detail}</div></div>${!isLast?'<div style="height:1px;background:#FFDEC3;"></div>':""}`;
+        il.innerHTML += `<div style="padding:12px 16px ${isLast?"0":"12px"} 16px;"><div style="font-size:13px;font-weight:700;font-family:'Inter',sans-serif;color:#1a1a1a;margin-bottom:6px;letter-spacing:-0.13px;">${imp.title}</div><div style="font-size:13px;font-weight:400;font-family:'Inter',sans-serif;color:#444;line-height:21px;letter-spacing:-0.13px;">${imp.detail}</div></div>${!isLast?'<div style="height:1px;background:#FFDEC3;"></div>':""}`;
       });
 
       // Reader Perspective
       if (data.reader_perspective) {
         const rp = data.reader_perspective;
-        let rpHtml = "";
+        const sections = [
+          { key: "takeaways", label: "Temel Öğrenimler" },
+          { key: "confusion_points", label: "Kafa Karışıklığı Noktaları" },
+          { key: "drop_off_points", label: "İlgi Düşme Noktaları" },
+          { key: "skimmability", label: "Hızlı Okunabilirlik", single: true }
+        ];
 
-        if (rp.takeaways?.length) {
-          rpHtml += `<div style="margin-bottom:12px;"><div style="font-size:12px;font-weight:600;font-family:'Inter',sans-serif;color:#888;letter-spacing:0.5px;margin-bottom:6px;">TEMEL ÖĞRENIMLER</div>`;
-          rp.takeaways.forEach(t => { rpHtml += `<div style="margin-bottom:4px;padding-left:12px;border-left:2px solid #E6E6E6;">${t}</div>`; });
-          rpHtml += `</div>`;
-        }
-        if (rp.confusion_points?.length) {
-          rpHtml += `<div style="margin-bottom:12px;"><div style="font-size:12px;font-weight:600;font-family:'Inter',sans-serif;color:#888;letter-spacing:0.5px;margin-bottom:6px;">KAFA KARIŞIKLIĞI NOKTALARı</div>`;
-          rp.confusion_points.forEach(t => { rpHtml += `<div style="margin-bottom:4px;padding-left:12px;border-left:2px solid #FFDEC3;">${t}</div>`; });
-          rpHtml += `</div>`;
-        }
-        if (rp.drop_off_points?.length) {
-          rpHtml += `<div style="margin-bottom:12px;"><div style="font-size:12px;font-weight:600;font-family:'Inter',sans-serif;color:#888;letter-spacing:0.5px;margin-bottom:6px;">İLGİ DÜŞME NOKTALARı</div>`;
-          rp.drop_off_points.forEach(t => { rpHtml += `<div style="margin-bottom:4px;padding-left:12px;border-left:2px solid #FFDEC3;">${t}</div>`; });
-          rpHtml += `</div>`;
-        }
-        if (rp.skimmability) {
-          rpHtml += `<div><div style="font-size:12px;font-weight:600;font-family:'Inter',sans-serif;color:#888;letter-spacing:0.5px;margin-bottom:6px;">HIZLI OKUNABİLİRLİK</div><div>${rp.skimmability}</div></div>`;
-        }
+        const rpEl = document.getElementById("readerPerspectiveContent");
+        rpEl.innerHTML = "";
 
-        document.getElementById("readerPerspectiveContent").innerHTML = rpHtml;
+        let visibleSections = sections.filter(s => {
+          const val = rp[s.key];
+          return val && (Array.isArray(val) ? val.length > 0 : true);
+        });
+
+        visibleSections.forEach((section, si) => {
+          const val = rp[section.key];
+          const items = section.single ? [val] : val;
+          const isLast = si === visibleSections.length - 1;
+
+          const wrapper = document.createElement("div");
+          wrapper.style.cssText = `padding:10px 16px ${isLast ? "0" : "10px"} 16px;`;
+
+          const titleDiv = document.createElement("div");
+          titleDiv.style.cssText = "font-size:13px;font-weight:700;font-family:'Inter',sans-serif;color:#1a1a1a;margin-bottom:2px;letter-spacing:-0.13px;";
+          titleDiv.textContent = section.label;
+          wrapper.appendChild(titleDiv);
+
+          const para = document.createElement("div");
+          para.style.cssText = "font-size:13px;font-weight:400;font-family:'Inter',sans-serif;color:#444;line-height:21px;letter-spacing:-0.13px;";
+          para.textContent = items.join(" ");
+          wrapper.appendChild(para);
+
+          rpEl.appendChild(wrapper);
+
+          if (!isLast) {
+            const divider = document.createElement("div");
+            divider.style.cssText = "height:1px;background:#B3E5FD;";
+            rpEl.appendChild(divider);
+          }
+        });
+
         document.getElementById("readerPerspectiveCard").style.display = "block";
       }
 
       // Headline & Hook
       if (data.headline_and_hook) {
         const hh = data.headline_and_hook;
-        let hhHtml = "";
+        const hhEl = document.getElementById("headlineHookContent");
+        hhEl.innerHTML = "";
 
-        if (hh.headline_feedback) {
-          hhHtml += `<div style="margin-bottom:12px;"><div style="font-size:12px;font-weight:600;font-family:'Inter',sans-serif;color:#888;letter-spacing:0.5px;margin-bottom:6px;">BAŞLIK DEĞERLENDİRMESİ</div><div>${hh.headline_feedback}</div></div>`;
-        }
-        if (hh.headline_suggestions?.length) {
-          hhHtml += `<div style="margin-bottom:12px;"><div style="font-size:12px;font-weight:600;font-family:'Inter',sans-serif;color:#888;letter-spacing:0.5px;margin-bottom:6px;">ALTERNATİF BAŞLIKLAR</div>`;
-          hh.headline_suggestions.forEach((s, i) => { hhHtml += `<div style="margin-bottom:4px;padding-left:12px;border-left:2px solid #C2E0CC;">${String(i+1).padStart(2,"0")}. ${s}</div>`; });
-          hhHtml += `</div>`;
-        }
-        if (hh.hook_rewrite) {
-          hhHtml += `<div><div style="font-size:12px;font-weight:600;font-family:'Inter',sans-serif;color:#888;letter-spacing:0.5px;margin-bottom:6px;">HOOK YENİDEN YAZIMI</div><div style="padding:10px 12px;background:#F6F6F6;border-radius:6px;font-style:italic;">${hh.hook_rewrite}</div></div>`;
-        }
+        const hhSections = [
+          { key: "headline_feedback", label: "Başlık Değerlendirmesi", single: true },
+          { key: "headline_suggestions", label: "Alternatif Başlıklar" },
+          { key: "hook_rewrite", label: "Hook Yeniden Yazımı", single: true }
+        ];
 
-        document.getElementById("headlineHookContent").innerHTML = hhHtml;
+        const visibleHh = hhSections.filter(s => {
+          const val = hh[s.key];
+          return val && (Array.isArray(val) ? val.length > 0 : true);
+        });
+
+        visibleHh.forEach((section, si) => {
+          const val = hh[section.key];
+          const isLast = si === visibleHh.length - 1;
+
+          const wrapper = document.createElement("div");
+          wrapper.style.cssText = `padding:10px 16px ${isLast ? "0" : "10px"} 16px;`;
+
+          const titleDiv = document.createElement("div");
+          titleDiv.style.cssText = "font-size:13px;font-weight:700;font-family:'Inter',sans-serif;color:#1a1a1a;margin-bottom:2px;letter-spacing:-0.13px;";
+          titleDiv.textContent = section.label;
+          wrapper.appendChild(titleDiv);
+
+          if (section.single) {
+            const para = document.createElement("div");
+            para.style.cssText = "font-size:13px;font-weight:400;font-family:'Inter',sans-serif;color:#444;line-height:21px;letter-spacing:-0.13px;";
+            para.textContent = val;
+            wrapper.appendChild(para);
+          } else {
+            val.forEach(item => {
+              const para = document.createElement("div");
+              para.style.cssText = "font-size:13px;font-weight:400;font-family:'Inter',sans-serif;color:#444;line-height:21px;letter-spacing:-0.13px;margin-bottom:2px;";
+              para.textContent = item;
+              wrapper.appendChild(para);
+            });
+          }
+
+          hhEl.appendChild(wrapper);
+
+          if (!isLast) {
+            const divider = document.createElement("div");
+            divider.style.cssText = "height:1px;background:#D3CCFF;";
+            hhEl.appendChild(divider);
+          }
+        });
+
         document.getElementById("headlineHookCard").style.display = "block";
       }
 
