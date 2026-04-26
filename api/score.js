@@ -20,7 +20,16 @@ Eğer içerik:
 O zaman SADECE şu JSON'u döndür ve başka hiçbir şey yazma:
 {"score": 0, "grade": "F", "summary": "Geçerli bir makale veya Medium linki bulunamadı.", "strengths": [], "improvements": []}
 
-Eğer içerik bir URL ise: O URL'deki makalenin başlığını ve konusunu URL'den çıkar, Medium platformundaki genel makale yapısını ve olası içeriği göz önünde bulundurarak değerlendirme yap. URL'yi ziyaret edemediğini belirtme, direkt analiz et.
+Eğer içerik bir URL ise:
+- URL'deki slug (başlık kısmı) üzerinden konu çıkar
+- İçeriği varsayarken SADECE şu varsayımları yap:
+- Giriş problemi vardır
+- Süreç anlatılmış olabilir
+- Metrikler olabilir / olmayabilir
+- Emin olmadığın hiçbir şeyi "var" gibi değerlendirme.
+- Belirsiz alanlarda maksimum %50 skor ver.
+
+Medium platformundaki genel makale yapısını ve olası içeriği göz önünde bulundurarak değerlendirme yap. URL'yi ziyaret edemediğini belirtme, direkt analiz et.
 
 Eğer makale metni verilirse: Metni doğrudan analiz et.
 
@@ -45,24 +54,26 @@ Her kriterin puanını 0-100 arasında ver, ardından ağırlıklı ortalama ile
 - Güçlü yönlerde de spesifik ol: hangi bölüm, hangi yaklaşım, neden işe yarıyor.
 - Her "detail" alanı en az 3 cümle olmalı. Kısa ve yüzeysel açıklamalar kabul edilmez.
 - Güçlü yönlerde: ne iyi, neden iyi, okuyucuya ne kazandırıyor — üçünü de yaz.
+- Eğer spesifik bir cümle referansı veremiyorsan o improvement'ı yazma.
+- Her improvement mutlaka birebir yeniden yazılmış bir örnek içermelidir.
+- 4 cümlelik genel değerlendirme yap. 1. ve 2. cümle makalenin genel kalite seviyesi ve ana problemi. 3. ve 4. cümle en büyük güçlü yön + en kritik eksik alan üzerine olsun.
 - Geliştirme önerilerinde: hangi bölüm sorunlu, neden sorunlu, nasıl düzeltilebilir — üçünü de yaz ve mutlaka somut bir yeniden yazma örneği ver.
 
 SADECE şu JSON formatında yanıt ver, başka hiçbir şey yazma:
 {
   "score": <ağırlıklı ortalama 0-100>,
-  "grade": "<A+/A/A-/B+/B/B-/C+/C/C-/D/F>",
-  "summary": "<2 cümlelik genel değerlendirme>",
+  "summary": "<4 cümlelik genel değerlendirme>",
   "strengths": [
-    {"title": "<güçlü yön başlığı>", "detail": "<makaledeki spesifik bölüm veya cümleye referans vererek açıkla>"},
-    {"title": "<güçlü yön başlığı>", "detail": "<makaledeki spesifik bölüm veya cümleye referans vererek açıkla>"},
-    {"title": "<güçlü yön başlığı>", "detail": "<makaledeki spesifik bölüm veya cümleye referans vererek açıkla>"},
-    {"title": "<güçlü yön başlığı>", "detail": "<makaledeki spesifik bölüm veya cümleye referans vererek açıkla>"}
+    {"title": "<güçlü yön başlığı>", "detail": "<makaledeki 3 spesifik bölüm veya cümleye referans vererek açıkla>"},
+    {"title": "<güçlü yön başlığı>", "detail": "<makaledeki 3 spesifik bölüm veya cümleye referans vererek açıkla>"},
+    {"title": "<güçlü yön başlığı>", "detail": "<makaledeki 3 spesifik bölüm veya cümleye referans vererek açıkla>"},
+    {"title": "<güçlü yön başlığı>", "detail": "<makaledeki 3 spesifik bölüm veya cümleye referans vererek açıkla>"}
   ],
   "improvements": [
-    {"title": "<geliştirme başlığı>", "detail": "<hangi bölüm/cümle, neden sorunlu, nasıl yeniden yazılabilir — somut örnek ver>"},
-    {"title": "<geliştirme başlığı>", "detail": "<hangi bölüm/cümle, neden sorunlu, nasıl yeniden yazılabilir — somut örnek ver>"},
-    {"title": "<geliştirme başlığı>", "detail": "<hangi bölüm/cümle, neden sorunlu, nasıl yeniden yazılabilir — somut örnek ver>"},
-    {"title": "<geliştirme başlığı>", "detail": "<hangi bölüm/cümle, neden sorunlu, nasıl yeniden yazılabilir — somut örnek ver>"}
+    {"title": "<geliştirme başlığı>", "detail": "<hangi 3 bölüm/cümle, neden sorunlu, nasıl yeniden yazılabilir — somut örnek ver>"},
+    {"title": "<geliştirme başlığı>", "detail": "<hangi 3 bölüm/cümle, neden sorunlu, nasıl yeniden yazılabilir — somut örnek ver>"},
+    {"title": "<geliştirme başlığı>", "detail": "<hangi 3 bölüm/cümle, neden sorunlu, nasıl yeniden yazılabilir — somut örnek ver>"},
+    {"title": "<geliştirme başlığı>", "detail": "<hangi 3 bölüm/cümle, neden sorunlu, nasıl yeniden yazılabilir — somut örnek ver>"}
   ]
 }`;
 
