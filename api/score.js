@@ -73,7 +73,7 @@ Her kriterin puanını 0-100 arasında ver, ardından ağırlıklı ortalama ile
 - 4 cümlelik genel değerlendirme yap. 1. ve 2. cümle makalenin genel kalite seviyesi ve ana problemi. 3. ve 4. cümle en büyük güçlü yön + en kritik eksik alan üzerine olsun.
 - Geliştirme önerilerinde: hangi bölüm sorunlu, neden sorunlu, nasıl düzeltilebilir — üçünü de yaz ve mutlaka somut bir yeniden yazma örneği ver.
 
-SADECE şu JSON formatında yanıt ver, başka hiçbir şey yazma:
+SADECE şu JSON formatında yanıt ver, başka hiçbir şey yazma. TÜM YANITLAR TÜRKÇE OLMALI — summary, strengths ve improvements alanlarındaki tüm metinler Türkçe yazılmalıdır:
 {
   "score": <ağırlıklı ortalama 0-100>,
   "summary": "<4 cümlelik genel değerlendirme>",
