@@ -393,6 +393,20 @@
           <div id="improvementsList"></div>
         </div>
 
+        <!-- Reader Perspective card -->
+        <div id="readerPerspectiveCard" style="display:none; width:578px; margin-top:16px; background:#fff; border:1px solid #E6E6E6; border-radius:10px; box-shadow:0 1px 2px rgba(26,26,26,0.05); overflow:hidden; padding-bottom:12px;">
+          <div style="padding:12px 16px 0 16px; font-size:14px; font-weight:600; font-family:'Inter',sans-serif; color:#1a1a1a;">Okuyucu Perspektifi</div>
+          <div style="margin-top:10px; height:1px; background:#E6E6E6;"></div>
+          <div id="readerPerspectiveContent" style="margin:8px 16px 0 16px; font-size:13px; font-weight:400; font-family:'Inter',sans-serif; color:#444; line-height:21px; letter-spacing:-0.13px;"></div>
+        </div>
+
+        <!-- Headline & Hook card -->
+        <div id="headlineHookCard" style="display:none; width:578px; margin-top:16px; background:#fff; border:1px solid #E6E6E6; border-radius:10px; box-shadow:0 1px 2px rgba(26,26,26,0.05); overflow:hidden; padding-bottom:12px;">
+          <div style="padding:12px 16px 0 16px; font-size:14px; font-weight:600; font-family:'Inter',sans-serif; color:#1a1a1a;">Başlık & Hook</div>
+          <div style="margin-top:10px; height:1px; background:#E6E6E6;"></div>
+          <div id="headlineHookContent" style="margin:8px 16px 0 16px; font-size:13px; font-weight:400; font-family:'Inter',sans-serif; color:#444; line-height:21px; letter-spacing:-0.13px;"></div>
+        </div>
+
       </div>
     </div>
   </div>
@@ -564,6 +578,55 @@
         const isLast = i === (data.improvements.length - 1);
         il.innerHTML += `<div style="padding:12px 16px ${isLast?"0":"12px"} 16px;"><div style="font-size:13px;font-weight:700;font-family:'Inter',sans-serif;color:#1a1a1a;margin-bottom:6px;letter-spacing:-0.13px;"><span style="color:#B7B7B7;">${num}.</span> ${imp.title}</div><div style="font-size:13px;font-weight:400;font-family:'Inter',sans-serif;color:#444;line-height:21px;letter-spacing:-0.13px;">${imp.detail}</div></div>${!isLast?'<div style="height:1px;background:#FFDEC3;"></div>':""}`;
       });
+
+      // Reader Perspective
+      if (data.reader_perspective) {
+        const rp = data.reader_perspective;
+        let rpHtml = "";
+
+        if (rp.takeaways?.length) {
+          rpHtml += `<div style="margin-bottom:12px;"><div style="font-size:12px;font-weight:600;font-family:'Inter',sans-serif;color:#888;letter-spacing:0.5px;margin-bottom:6px;">TEMEL ÖĞRENIMLER</div>`;
+          rp.takeaways.forEach(t => { rpHtml += `<div style="margin-bottom:4px;padding-left:12px;border-left:2px solid #E6E6E6;">${t}</div>`; });
+          rpHtml += `</div>`;
+        }
+        if (rp.confusion_points?.length) {
+          rpHtml += `<div style="margin-bottom:12px;"><div style="font-size:12px;font-weight:600;font-family:'Inter',sans-serif;color:#888;letter-spacing:0.5px;margin-bottom:6px;">KAFA KARIŞIKLIĞI NOKTALARı</div>`;
+          rp.confusion_points.forEach(t => { rpHtml += `<div style="margin-bottom:4px;padding-left:12px;border-left:2px solid #FFDEC3;">${t}</div>`; });
+          rpHtml += `</div>`;
+        }
+        if (rp.drop_off_points?.length) {
+          rpHtml += `<div style="margin-bottom:12px;"><div style="font-size:12px;font-weight:600;font-family:'Inter',sans-serif;color:#888;letter-spacing:0.5px;margin-bottom:6px;">İLGİ DÜŞME NOKTALARı</div>`;
+          rp.drop_off_points.forEach(t => { rpHtml += `<div style="margin-bottom:4px;padding-left:12px;border-left:2px solid #FFDEC3;">${t}</div>`; });
+          rpHtml += `</div>`;
+        }
+        if (rp.skimmability) {
+          rpHtml += `<div><div style="font-size:12px;font-weight:600;font-family:'Inter',sans-serif;color:#888;letter-spacing:0.5px;margin-bottom:6px;">HIZLI OKUNABİLİRLİK</div><div>${rp.skimmability}</div></div>`;
+        }
+
+        document.getElementById("readerPerspectiveContent").innerHTML = rpHtml;
+        document.getElementById("readerPerspectiveCard").style.display = "block";
+      }
+
+      // Headline & Hook
+      if (data.headline_and_hook) {
+        const hh = data.headline_and_hook;
+        let hhHtml = "";
+
+        if (hh.headline_feedback) {
+          hhHtml += `<div style="margin-bottom:12px;"><div style="font-size:12px;font-weight:600;font-family:'Inter',sans-serif;color:#888;letter-spacing:0.5px;margin-bottom:6px;">BAŞLIK DEĞERLENDİRMESİ</div><div>${hh.headline_feedback}</div></div>`;
+        }
+        if (hh.headline_suggestions?.length) {
+          hhHtml += `<div style="margin-bottom:12px;"><div style="font-size:12px;font-weight:600;font-family:'Inter',sans-serif;color:#888;letter-spacing:0.5px;margin-bottom:6px;">ALTERNATİF BAŞLIKLAR</div>`;
+          hh.headline_suggestions.forEach((s, i) => { hhHtml += `<div style="margin-bottom:4px;padding-left:12px;border-left:2px solid #C2E0CC;">${String(i+1).padStart(2,"0")}. ${s}</div>`; });
+          hhHtml += `</div>`;
+        }
+        if (hh.hook_rewrite) {
+          hhHtml += `<div><div style="font-size:12px;font-weight:600;font-family:'Inter',sans-serif;color:#888;letter-spacing:0.5px;margin-bottom:6px;">HOOK YENİDEN YAZIMI</div><div style="padding:10px 12px;background:#F6F6F6;border-radius:6px;font-style:italic;">${hh.hook_rewrite}</div></div>`;
+        }
+
+        document.getElementById("headlineHookContent").innerHTML = hhHtml;
+        document.getElementById("headlineHookCard").style.display = "block";
+      }
 
       document.getElementById("resultCard").classList.add("show");
       document.getElementById("panelOverlay").classList.add("show");
