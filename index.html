@@ -297,7 +297,7 @@
         </div>
         <div class="file-name-layer" id="fileNameLayer">
           <span class="file-name-text" id="fileNameText"></span>
-          <button class="file-delete-btn" id="fileDeleteBtn">
+          <button class="file-delete-btn" id="fileDeleteBtn" onmouseover="this.querySelector('path:first-child').setAttribute('fill','#D9D9D9')" onmouseout="this.querySelector('path:first-child').setAttribute('fill','#E8E8E8')">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M0 4C0 1.79086 1.79086 0 4 0H16C18.2091 0 20 1.79086 20 4V16C20 18.2091 18.2091 20 16 20H4C1.79086 20 0 18.2091 0 16V4Z" fill="#E8E8E8"/>
               <path d="M13 7L7 13" stroke="#09090B" stroke-width="1.33" stroke-linecap="round" stroke-linejoin="round"/>
@@ -466,8 +466,11 @@
     let docxBase64 = "";
 
     function handleFile(file) {
-      fileName = file.name; urlInput.value = ""; urlInput.disabled = true;
+      fileName = file.name;
+      urlInput.value = "";
+      urlInput.disabled = true;
       docText = ""; docxBase64 = "";
+      hideAgainBtn();
       const row = document.getElementById("fileInputRow");
       const bar = document.getElementById("fileProgressBar");
       const progressLayer = document.getElementById("fileProgressLayer");
