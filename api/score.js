@@ -32,7 +32,7 @@ Eğer içerik:
 - Gerçek bir makale yapısı taşımıyorsa (giriş, gelişme, sonuç, başlık vb. yoksa)
 - Geçerli bir Medium URL'si değilse ve makale metni de değilse
 O zaman SADECE şu JSON'u döndür ve başka hiçbir şey yazma:
-{"score": 0, "grade": "F", "summary": "Geçerli bir makale veya Medium linki bulunamadı.", "strengths": [], "improvements": []}
+{"score": 0, "grade": "F", "summary": "Geçerli bir makale veya Medium linki bulunamadı.", "strengths": [], "improvements": [], "reader_perspective": null, "headline_and_hook": null}
 
 Eğer içerik bir URL ise:
 - URL'deki slug (başlık kısmı) üzerinden konu çıkar
@@ -73,7 +73,7 @@ Her kriterin puanını 0-100 arasında ver, ardından ağırlıklı ortalama ile
 - 4 cümlelik genel değerlendirme yap. 1. ve 2. cümle makalenin genel kalite seviyesi ve ana problemi. 3. ve 4. cümle en büyük güçlü yön + en kritik eksik alan üzerine olsun.
 - Geliştirme önerilerinde: hangi bölüm sorunlu, neden sorunlu, nasıl düzeltilebilir — üçünü de yaz ve mutlaka somut bir yeniden yazma örneği ver.
 
-SADECE şu JSON formatında yanıt ver, başka hiçbir şey yazma. TÜM YANITLAR TÜRKÇE OLMALI — summary, strengths ve improvements alanlarındaki tüm metinler Türkçe yazılmalıdır:
+SADECE şu JSON formatında yanıt ver, başka hiçbir şey yazma. TÜM YANITLAR TÜRKÇE OLMALI — summary, strengths, improvements, reader_perspective ve headline_and_hook alanlarındaki tüm metinler Türkçe yazılmalıdır:
 {
   "score": <ağırlıklı ortalama 0-100>,
   "summary": "<4 cümlelik genel değerlendirme>",
@@ -88,7 +88,32 @@ SADECE şu JSON formatında yanıt ver, başka hiçbir şey yazma. TÜM YANITLAR
     {"title": "<geliştirme başlığı>", "detail": "<hangi 3 bölüm/cümle, neden sorunlu, nasıl yeniden yazılabilir — somut örnek ver>"},
     {"title": "<geliştirme başlığı>", "detail": "<hangi 3 bölüm/cümle, neden sorunlu, nasıl yeniden yazılabilir — somut örnek ver>"},
     {"title": "<geliştirme başlığı>", "detail": "<hangi 3 bölüm/cümle, neden sorunlu, nasıl yeniden yazılabilir — somut örnek ver>"}
-  ]
+  ],
+  "reader_perspective": {
+    "takeaways": [
+      "<okuyucunun çıkaracağı temel öğrenim>",
+      "<okuyucunun çıkaracağı temel öğrenim>",
+      "<okuyucunun çıkaracağı temel öğrenim>"
+    ],
+    "confusion_points": [
+      "<okuyucunun kafasının karışabileceği nokta>",
+      "<okuyucunun kafasının karışabileceği nokta>"
+    ],
+    "drop_off_points": [
+      "<okuyucunun ilgisinin düşebileceği bölüm>",
+      "<okuyucunun ilgisinin düşebileceği bölüm>"
+    ],
+    "skimmability": "<makalenin hızlı okunabilirlik açısından değerlendirmesi>"
+  },
+  "headline_and_hook": {
+    "headline_feedback": "<mevcut başlığın güçlü/zayıf yönleri>",
+    "headline_suggestions": [
+      "<alternatif başlık 1>",
+      "<alternatif başlık 2>",
+      "<alternatif başlık 3>"
+    ],
+    "hook_rewrite": "<ilk paragraf için daha güçlü hook önerisi>"
+  }
 }`;
 
   try {
@@ -100,8 +125,8 @@ SADECE şu JSON formatında yanıt ver, başka hiçbir şey yazma. TÜM YANITLAR
       },
       body: JSON.stringify({
         model: "gpt-4o",
-        max_tokens: 2000,
-        temperature: 1.0,
+        max_tokens: 3500,
+        temperature: 0.6,
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
           { role: "user", content: articleContent },
