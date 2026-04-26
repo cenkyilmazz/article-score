@@ -1,3 +1,5 @@
+import mammoth from "mammoth";
+
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
@@ -6,8 +8,20 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
-  const { content } = req.body || {};
-  if (!content) return res.status(400).json({ error: "content is required" });
+  const { content, docxBase64 } = req.body || {};
+  if (!content && !docxBase64) return res.status(400).json({ error: "content is required" });
+
+  // If docx file sent, convert to text with mammoth
+  let articleContent = content;
+  if (docxBase64) {
+    try {
+      const buffer = Buffer.from(docxBase64, "base64");
+      const result = await mammoth.extractRawText({ buffer });
+      articleContent = `Aşağıdaki makale metnini değerlendir:\n\n${result.value.slice(0, 8000)}`;
+    } catch (err) {
+      return res.status(400).json({ error: "Doküman okunamadı: " + err.message });
+    }
+  }
 
   const SYSTEM_PROMPT = `Sen bir Medium makale editörü ve içerik stratejistisin. Sana bir makale metni veya Medium URL'si verilecek.
 
@@ -90,7 +104,7 @@ SADECE şu JSON formatında yanıt ver, başka hiçbir şey yazma:
         temperature: 1.0,
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content },
+          { role: "user", content: articleContent },
         ],
       }),
     });
