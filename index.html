@@ -165,14 +165,14 @@
     .btn-score {
       width: 346px; height: 36px; max-width: 100%;
       margin-top: 20px; padding: 0 14px;
-      background: var(--black); color: #fff;
+      background: #000000; color: #fff;
       border: none; border-radius: 8px;
       font-size: 14px; font-weight: 500; font-family: 'Inter', sans-serif;
       cursor: pointer; transition: background 0.2s;
       display: flex; align-items: center; justify-content: center; gap: 8px;
     }
-    .btn-score:hover { background: #333; }
-    .btn-score:disabled { background: #555; cursor: not-allowed; }
+    .btn-score:hover { background: #262626; }
+    .btn-score:disabled { background: #000000; cursor: not-allowed; }
 
     .spinner {
       width: 16px; height: 16px;
@@ -352,7 +352,7 @@
         <div style="width:578px; height:64px; background:#EDEDED; border-radius:10px;"></div>
 
         <!-- Close button -->
-        <button id="panelCloseBtn" style="position:absolute; top:16px; right:12px; background:none; border:none; cursor:pointer; padding:0; line-height:0; z-index:10;">
+        <button id="panelCloseBtn" style="position:absolute; top:16px; right:12px; background:none; border:none; cursor:pointer; padding:0; line-height:0; z-index:10;" onmouseover="this.querySelector('path:first-child').setAttribute('fill','#262626')" onmouseout="this.querySelector('path:first-child').setAttribute('fill','#000000')">
           <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M0 8C0 3.58172 3.58172 0 8 0H24C28.4183 0 32 3.58172 32 8V24C32 28.4183 28.4183 32 24 32H8C3.58172 32 0 28.4183 0 24V8Z" fill="black"/>
             <path d="M20.8031 11.2031L11.2031 20.8031" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -525,16 +525,21 @@
     function reopenPanel() {
       document.getElementById("resultCard").classList.add("show");
       document.getElementById("panelOverlay").classList.add("show");
-      hideAgainBtn();
     }
 
     document.getElementById("panelOverlay").addEventListener("click", closePanel);
     document.addEventListener("click", (e) => { if (e.target.closest("#panelCloseBtn")) closePanel(); });
 
     function setLoading(on) {
-      document.getElementById("scoreBtn").disabled = on;
-      document.getElementById("spinner").style.display = on ? "inline-block" : "none";
-      document.getElementById("btnText").textContent = on ? "Analiz ediliyor..." : "Makaleyi puanla";
+      const btn = document.getElementById("scoreBtn");
+      const spinner = document.getElementById("spinner");
+      const btnText = document.getElementById("btnText");
+      btn.disabled = on;
+      spinner.style.display = on ? "inline-block" : "none";
+      btnText.textContent = on ? "Analiz ediliyor..." : "Makaleyi puanla";
+      btnText.style.fontWeight = "500";
+      btnText.style.fontFamily = "'Inter', sans-serif";
+      btnText.style.fontSize = "14px";
     }
 
     function renderResult(data) {
