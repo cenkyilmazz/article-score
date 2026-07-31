@@ -498,6 +498,7 @@
       const reader = new FileReader();
       reader.onload = (e) => {
         if (isDocx) {
+          // Store as base64 for backend processing
           const bytes = new Uint8Array(e.target.result);
           let binary = "";
           bytes.forEach(b => binary += String.fromCharCode(b));
@@ -578,6 +579,7 @@
         il.innerHTML += `<div style="padding:12px 16px ${isLast?"0":"12px"} 16px;"><div style="font-size:13px;font-weight:700;font-family:'Inter',sans-serif;color:#1a1a1a;margin-bottom:6px;letter-spacing:-0.13px;">${imp.title}</div><div style="font-size:13px;font-weight:400;font-family:'Inter',sans-serif;color:#444;line-height:21px;letter-spacing:-0.13px;">${imp.detail}</div></div>${!isLast?'<div style="height:1px;background:#FFDEC3;"></div>':""}`;
       });
 
+      // Reader Perspective
       if (data.reader_perspective) {
         const rp = data.reader_perspective;
         const sections = [
@@ -625,6 +627,7 @@
         document.getElementById("readerPerspectiveCard").style.display = "block";
       }
 
+      // Headline & Hook
       if (data.headline_and_hook) {
         const hh = data.headline_and_hook;
         const hhEl = document.getElementById("headlineHookContent");
@@ -691,28 +694,27 @@
 
       const PROXY_URL = "https://article-score.vercel.app/api/score";
 
-      // Yeni API sözleşmesi: url | content | docxBase64
       let body;
       if (docxBase64) {
         body = JSON.stringify({ docxBase64 });
       } else if (docText.trim()) {
-        body = JSON.stringify({ content: docText });
+        body = JSON.stringify({ content: `Aşağıdaki makale metnini değerlendir:\n\n${docText.slice(0, 8000)}` });
       } else {
-        body = JSON.stringify({ url });
+        body = JSON.stringify({ content: `Şu Medium makalesini değerlendir (URL): ${url}` });
       }
 
       try {
         const response = await fetch(PROXY_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body });
         const parsed = await response.json();
         if (!response.ok) throw new Error(parsed.error || "Sunucu hatası");
-        if (parsed.score === 0 && (!parsed.strengths || parsed.strengths.length === 0)) {
-          showToast("error", parsed.summary || parsed.error || "Geçerli bir makale bulunamadı.");
+        if (parsed.score === 0 && parsed.strengths && parsed.strengths.length === 0) {
+          showToast("error", parsed.summary || "Geçerli bir makale bulunamadı.");
           setLoading(false);
           return;
         }
         renderResult(parsed);
       } catch (e) {
-        showToast("error", e.message || "Bir hata oluştu. Lütfen tekrar deneyin.");
+        showToast("error", "Bir hata oluştu. Lütfen tekrar deneyin.");
       } finally {
         setLoading(false);
       }
