@@ -6,7 +6,7 @@ const MIN_ARTICLE_CHARS = 400;
 const MIN_QUOTE_WORDS = 5;
 const MAX_QUOTE_WORDS = 25;
 const MIN_APPLICABLE_CRITERIA = 4;
-const REQUEST_TIMEOUT_MS = 60000;
+const REQUEST_TIMEOUT_MS = 45000;
 const RATE_LIMIT = { windowMs: 60000, maxRequests: 10 };
 
 const CRITERIA = [
@@ -291,37 +291,155 @@ function isUrl(value) {
   return typeof value === "string" && /^https?:\/\/\S+$/i.test(value.trim());
 }
 
-async function fetchArticleFromUrl(url) {
+// Frontend "Şu Medium makalesini değerlendir (URL): https://..." gibi
+// sarmalanmış metin gönderiyor; URL'yi metnin içinden ayıkla.
+function extractUrl(value) {
+  if (!value || typeof value !== "string") return null;
+  const trimmed = value.trim();
+  if (isUrl(trimmed)) return trimmed.replace(/[.,);]+$/g, "");
+  const match = trimmed.match(/https?:\/\/[^\s<>"']+/i);
+  if (!match) return null;
+  return match[0].replace(/[.,);]+$/g, "");
+}
+
+const FETCH_HEADERS = {
+  "User-Agent":
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0 Safari/537.36",
+  Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+  "Accept-Language": "tr,en;q=0.8",
+};
+
+function extractMediumParagraphs(html) {
+  const paragraphs = [
+    ...(html.match(/<p[^>]*class="[^"]*pw-post-body-paragraph[^"]*"[^>]*>[\s\S]*?<\/p>/gi) || []),
+    ...(html.match(/<h[1-3][^>]*>[\s\S]*?<\/h[1-3]>/gi) || []),
+  ];
+  if (!paragraphs.length) return "";
+
+  const titleMatch = html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i);
+  const title = titleMatch ? htmlToText(titleMatch[1]) : "";
+  const body = paragraphs.map((block) => htmlToText(block)).filter(Boolean).join("\n\n");
+  return [title, body].filter(Boolean).join("\n\n");
+}
+
+function articleFromHtml(html, source = "html") {
+  if (!html || /just a moment|cf-browser-verification|attention required/i.test(html)) {
+    return null;
+  }
+
+  const main =
+    html.match(/<article\b[\s\S]*?<\/article>/i)?.[0] ||
+    html.match(/<main\b[\s\S]*?<\/main>/i)?.[0] ||
+    html;
+
+  const richText = extractMediumParagraphs(html);
+  const fallbackText = htmlToText(main);
+  const text = richText.length >= MIN_ARTICLE_CHARS ? richText : fallbackText;
+  if (text.length < MIN_ARTICLE_CHARS) return null;
+
+  return { text, visualsCount: resolveVisualsCount(main, text), source };
+}
+
+function mediumFeedCandidates(articleUrl) {
+  try {
+    const parsed = new URL(articleUrl);
+    if (!parsed.hostname.endsWith("medium.com")) return [];
+
+    const parts = parsed.pathname.split("/").filter(Boolean);
+    const feeds = [];
+
+    if (parsed.hostname !== "medium.com") {
+      const subdomain = parsed.hostname.split(".")[0];
+      if (subdomain && subdomain !== "www") feeds.push(`https://medium.com/feed/${subdomain}`);
+    } else if (parts[0]?.startsWith("@")) {
+      feeds.push(`https://medium.com/feed/${parts[0]}`);
+    } else if (parts[0] && parts[0] !== "p") {
+      feeds.push(`https://medium.com/feed/${parts[0]}`);
+    }
+
+    return feeds;
+  } catch {
+    return [];
+  }
+}
+
+function mediumPostId(articleUrl) {
+  try {
+    const slug = new URL(articleUrl).pathname.split("/").filter(Boolean).pop() || "";
+    const match = slug.match(/-([a-f0-9]{8,12})$/i);
+    return match?.[1] || slug;
+  } catch {
+    return null;
+  }
+}
+
+async function fetchText(url, timeoutMs = 20000) {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 20000);
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const response = await fetch(url, {
       redirect: "follow",
       signal: controller.signal,
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0 Safari/537.36",
-        Accept: "text/html,application/xhtml+xml",
-        "Accept-Language": "tr,en;q=0.8",
-      },
+      headers: FETCH_HEADERS,
     });
     if (!response.ok) return null;
-
-    const html = await response.text();
-    const main =
-      html.match(/<article\b[\s\S]*?<\/article>/i)?.[0] ||
-      html.match(/<main\b[\s\S]*?<\/main>/i)?.[0] ||
-      html;
-
-    const text = htmlToText(main);
-    if (text.length < MIN_ARTICLE_CHARS) return null;
-
-    return { text, visualsCount: resolveVisualsCount(main, text), source: "html" };
+    return await response.text();
   } catch {
     return null;
   } finally {
     clearTimeout(timer);
   }
+}
+
+async function fetchArticleFromMediumRss(articleUrl) {
+  const postId = mediumPostId(articleUrl);
+  if (!postId) return null;
+
+  for (const feedUrl of mediumFeedCandidates(articleUrl)) {
+    const feed = await fetchText(feedUrl);
+    if (!feed) continue;
+
+    const items = feed.match(/<item>[\s\S]*?<\/item>/gi) || [];
+    const match = items.find((item) => item.includes(postId));
+    if (!match) continue;
+
+    const encoded =
+      match.match(/<content:encoded><!\[CDATA\[([\s\S]*?)\]\]><\/content:encoded>/i)?.[1] ||
+      match.match(/<description><!\[CDATA\[([\s\S]*?)\]\]><\/description>/i)?.[1] ||
+      "";
+    const title =
+      match.match(/<title><!\[CDATA\[([\s\S]*?)\]\]><\/title>/i)?.[1] ||
+      match.match(/<title>([\s\S]*?)<\/title>/i)?.[1] ||
+      "";
+
+    const body = htmlToText(encoded);
+    const text = [htmlToText(title), body].filter(Boolean).join("\n\n");
+    if (text.length < MIN_ARTICLE_CHARS) continue;
+
+    return {
+      text,
+      visualsCount: resolveVisualsCount(encoded, text),
+      source: "medium-rss",
+    };
+  }
+
+  return null;
+}
+
+async function fetchArticleFromUrl(url) {
+  const normalized = extractUrl(url) || url;
+
+  const html = await fetchText(normalized);
+  const fromHtml = articleFromHtml(html, "html");
+  if (fromHtml) return fromHtml;
+
+  // Vercel IP'lerinden Medium HTML'i sık engellenir; RSS genelde açık kalır.
+  if (/medium\.com/i.test(normalized)) {
+    const fromRss = await fetchArticleFromMediumRss(normalized);
+    if (fromRss) return fromRss;
+  }
+
+  return null;
 }
 
 async function extractFromDocx(docxBase64) {
@@ -599,8 +717,8 @@ function isRateLimited(ip) {
 }
 
 export default async function handler(req, res) {
-  const allowedOrigin = process.env.ALLOWED_ORIGIN || "";
-  if (allowedOrigin) res.setHeader("Access-Control-Allow-Origin", allowedOrigin);
+  const allowedOrigin = process.env.ALLOWED_ORIGIN || "*";
+  res.setHeader("Access-Control-Allow-Origin", allowedOrigin);
   res.setHeader("Vary", "Origin");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
@@ -635,7 +753,7 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: "Doküman okunamadı: " + err.message });
       }
     } else {
-      const targetUrl = isUrl(url) ? url.trim() : isUrl(content) ? content.trim() : null;
+      const targetUrl = extractUrl(url) || extractUrl(content);
       if (targetUrl) {
         article = await fetchArticleFromUrl(targetUrl);
         if (!article) {
