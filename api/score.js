@@ -2,7 +2,8 @@ import mammoth from "mammoth";
 
 const MAX_ARTICLE_CHARS = 60000;
 const MAX_DOCX_BASE64_CHARS = 15_000_000;
-const MIN_ARTICLE_CHARS = 400;
+// Baştan elemesin diye düşük tutulur; boş/anlamsız içerik yine elenir.
+const MIN_ARTICLE_CHARS = 50;
 const MIN_QUOTE_WORDS = 5;
 const MAX_QUOTE_WORDS = 25;
 const MIN_APPLICABLE_CRITERIA = 4;
