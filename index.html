@@ -694,28 +694,27 @@
 
       const PROXY_URL = "https://article-score.vercel.app/api/score";
 
-      // Yeni API sözleşmesi: url | content | docxBase64
       let body;
       if (docxBase64) {
         body = JSON.stringify({ docxBase64 });
       } else if (docText.trim()) {
-        body = JSON.stringify({ content: docText });
+        body = JSON.stringify({ content: `Aşağıdaki makale metnini değerlendir:\n\n${docText.slice(0, 8000)}` });
       } else {
-        body = JSON.stringify({ url });
+        body = JSON.stringify({ content: `Şu Medium makalesini değerlendir (URL): ${url}` });
       }
 
       try {
         const response = await fetch(PROXY_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body });
         const parsed = await response.json();
         if (!response.ok) throw new Error(parsed.error || "Sunucu hatası");
-        if (parsed.score === 0 && (!parsed.strengths || parsed.strengths.length === 0)) {
-          showToast("error", parsed.summary || parsed.error || "Geçerli bir makale bulunamadı.");
+        if (parsed.score === 0 && parsed.strengths && parsed.strengths.length === 0) {
+          showToast("error", parsed.summary || "Geçerli bir makale bulunamadı.");
           setLoading(false);
           return;
         }
         renderResult(parsed);
       } catch (e) {
-        showToast("error", e.message || "Bir hata oluştu. Lütfen tekrar deneyin.");
+        showToast("error", "Bir hata oluştu. Lütfen tekrar deneyin.");
       } finally {
         setLoading(false);
       }
