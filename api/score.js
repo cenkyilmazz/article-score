@@ -378,7 +378,9 @@ function mediumPostId(articleUrl) {
   }
 }
 
-async function fetchText(url, timeoutMs = 20000) {
+// Hangi adımın neden düştüğü dışarıdan görülebilsin diye durum bilgisi
+// yutulmuyor; fetchText bunun yalnızca metin isteyen çağrılar için sarmalı.
+async function fetchRaw(url, timeoutMs = 20000) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
@@ -387,13 +389,18 @@ async function fetchText(url, timeoutMs = 20000) {
       signal: controller.signal,
       headers: FETCH_HEADERS,
     });
-    if (!response.ok) return null;
-    return await response.text();
-  } catch {
-    return null;
+    if (!response.ok) return { text: null, status: response.status };
+    return { text: await response.text(), status: response.status };
+  } catch (err) {
+    return { text: null, status: err.name === "AbortError" ? "timeout" : `error:${err.name}` };
   } finally {
     clearTimeout(timer);
   }
+}
+
+async function fetchText(url, timeoutMs = 20000) {
+  const { text } = await fetchRaw(url, timeoutMs);
+  return text;
 }
 
 // Medium'un kendi JSON uç noktasındaki paragraf tipleri.
@@ -445,27 +452,49 @@ function mediumPostIdStrict(articleUrl) {
   return postId && /^[a-f0-9]{8,12}$/i.test(postId) ? postId : null;
 }
 
-async function fetchArticleFromMediumJson(articleUrl) {
+async function fetchArticleFromMediumJson(articleUrl, attempts) {
   const postId = mediumPostIdStrict(articleUrl);
   if (!postId) return null;
 
-  const raw = await fetchText(`https://medium.com/p/${postId}?format=json`);
-  if (!raw) return null;
-
-  return articleFromMediumJson(raw);
+  const { text, status } = await fetchRaw(`https://medium.com/p/${postId}?format=json`);
+  const article = text ? articleFromMediumJson(text) : null;
+  attempts.push({
+    source: "medium-json",
+    status,
+    usable: Boolean(article),
+    ...(text && !article ? { detail: "yanıt beklenen JSON yapısında değil" } : {}),
+  });
+  return article;
 }
 
-async function fetchArticleFromMediumRss(articleUrl) {
+async function fetchArticleFromMediumRss(articleUrl, attempts) {
   const postId = mediumPostId(articleUrl);
   if (!postId) return null;
 
-  for (const feedUrl of mediumFeedCandidates(articleUrl)) {
-    const feed = await fetchText(feedUrl);
-    if (!feed) continue;
+  const feedUrls = mediumFeedCandidates(articleUrl);
+  if (!feedUrls.length) {
+    attempts.push({ source: "medium-rss", status: null, usable: false, detail: "feed adayı yok" });
+    return null;
+  }
+
+  for (const feedUrl of feedUrls) {
+    const { text: feed, status } = await fetchRaw(feedUrl);
+    if (!feed) {
+      attempts.push({ source: "medium-rss", status, usable: false });
+      continue;
+    }
 
     const items = feed.match(/<item>[\s\S]*?<\/item>/gi) || [];
     const match = items.find((item) => item.includes(postId));
-    if (!match) continue;
+    if (!match) {
+      attempts.push({
+        source: "medium-rss",
+        status,
+        usable: false,
+        detail: `makale feed'de yok (feed ${items.length} yazı içeriyor)`,
+      });
+      continue;
+    }
 
     const encoded =
       match.match(/<content:encoded><!\[CDATA\[([\s\S]*?)\]\]><\/content:encoded>/i)?.[1] ||
@@ -478,8 +507,12 @@ async function fetchArticleFromMediumRss(articleUrl) {
 
     const body = htmlToText(encoded);
     const text = [htmlToText(title), body].filter(Boolean).join("\n\n");
-    if (text.length < MIN_ARTICLE_CHARS) continue;
+    if (text.length < MIN_ARTICLE_CHARS) {
+      attempts.push({ source: "medium-rss", status, usable: false, detail: "feed metni çok kısa" });
+      continue;
+    }
 
+    attempts.push({ source: "medium-rss", status, usable: true });
     return {
       text,
       visualsCount: resolveVisualsCount(encoded, text),
@@ -490,28 +523,32 @@ async function fetchArticleFromMediumRss(articleUrl) {
   return null;
 }
 
+// Denenen her kaynağı durumuyla birlikte kaydeder; başarısızlıkta hangi adımın
+// neden düştüğü yanıtta görünsün diye article ile birlikte attempts döner.
 async function fetchArticleFromUrl(url) {
   const normalized = extractUrl(url) || url;
+  const attempts = [];
 
   // Medium HTML'i Vercel IP'lerinden engellenir. JSON uç noktası hem bu engelin
   // dışında kalır hem de başlık sırası, liste maddeleri ve gerçek görsel sayısı
   // gibi HTML kazımada kaybolan bilgileri verdiği için önce o denenir.
   if (mediumPostIdStrict(normalized)) {
-    const fromJson = await fetchArticleFromMediumJson(normalized);
-    if (fromJson) return fromJson;
+    const fromJson = await fetchArticleFromMediumJson(normalized, attempts);
+    if (fromJson) return { article: fromJson, attempts };
   }
 
-  const html = await fetchText(normalized);
+  const { text: html, status } = await fetchRaw(normalized);
   const fromHtml = articleFromHtml(html, "html");
-  if (fromHtml) return fromHtml;
+  attempts.push({ source: "html", status, usable: Boolean(fromHtml) });
+  if (fromHtml) return { article: fromHtml, attempts };
 
   // RSS yalnızca yayının son 10 yazısını içerir, bu yüzden en sonda kalır.
   if (/medium\.com/i.test(normalized)) {
-    const fromRss = await fetchArticleFromMediumRss(normalized);
-    if (fromRss) return fromRss;
+    const fromRss = await fetchArticleFromMediumRss(normalized, attempts);
+    if (fromRss) return { article: fromRss, attempts };
   }
 
-  return null;
+  return { article: null, attempts };
 }
 
 async function extractFromDocx(docxBase64) {
@@ -844,6 +881,7 @@ export default async function handler(req, res) {
 
   try {
     let article = null;
+    let fetchAttempts = null;
 
     if (docxBase64) {
       try {
@@ -854,11 +892,14 @@ export default async function handler(req, res) {
     } else {
       const targetUrl = extractUrl(url) || extractUrl(content);
       if (targetUrl) {
-        article = await fetchArticleFromUrl(targetUrl);
+        const fetched = await fetchArticleFromUrl(targetUrl);
+        article = fetched.article;
+        fetchAttempts = fetched.attempts;
         if (!article) {
           return res.status(422).json({
             code: "CONTENT_FETCH_FAILED",
             error: ERRORS.CONTENT_FETCH_FAILED,
+            attempts: fetchAttempts,
           });
         }
       } else {
@@ -905,6 +946,7 @@ export default async function handler(req, res) {
     return res.status(200).json({
       ...grounded,
       source: article.source,
+      ...(fetchAttempts ? { attempts: fetchAttempts } : {}),
       truncation_suspected: grounded.truncation_suspected || truncated,
       output_truncated: result.finishReason === "length",
     });
