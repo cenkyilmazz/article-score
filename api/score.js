@@ -161,6 +161,7 @@ Kanıt güçlüyse yüksek puan vermekten çekinme. Aşağı yönlü çıpa kada
 
 ## AŞAMA 4 — GERİ BİLDİRİM
 - Güçlü yönler ve iyileştirmeler için SABİT SAYI YOKTUR. Kanıtı olan kadar madde yaz (en fazla 5). Kanıtın yoksa madde yazma; az sayıda sağlam madde, çok sayıda uydurma maddeden iyidir.
+- Ancak kanıt varken madde sayısını kısma. Normal uzunlukta bir makalede genellikle 3-5 güçlü yön ve 3-5 iyileştirme için birebir alıntı bulunabilir. Bir maddeyi yalnızca gerçekten alıntı bulamadığın için ele; "emin olamadım" gerekçesiyle eleme.
 - Her maddede "evidence_quote" zorunludur: metinden birebir kopyalanmış ${MIN_QUOTE_WORDS}-${MAX_QUOTE_WORDS} kelimelik bir alıntı. Alıntı üretemiyorsan o maddeyi tamamen çıkar.
 - Her iyileştirmede yeniden yazım örneği ("rewrite") zorunludur: yazarın doğrudan kullanabileceği, birebir yazılmış somut bir metin.
 - Her iyileştirmede ayrıca "detail" alanı zorunludur: hangi bölümün neden sorunlu olduğunu ve nasıl düzeltileceğini en az 3 cümleyle anlat.
@@ -171,8 +172,15 @@ Kanıt güçlüyse yüksek puan vermekten çekinme. Aşağı yönlü çıpa kada
 Verilen metin gerçek bir makale değilse (tek cümle, rastgele karakterler, test verisi, makale yapısı taşımayan not) SADECE şunu dön:
 {"is_valid_article": false, "reason": "Geçerli bir makale metni bulunamadı."}
 
+## DİL KURALI (dikkat: iki farklı alan grubu var)
+Senin yazdığın açıklama alanları TÜRKÇE olmalıdır: summary, title, detail, problem, rationale, issue, reason, rewrite, takeaways, skimmability, headline_feedback, headline_suggestions, hook_rewrite.
+
+Makaleden kopyaladığın alanlar ise ASLA ÇEVRİLMEZ; makale hangi dildeyse o dilde, birebir aynı karakterlerle yazılır: evidence_quote, section, sections, detected_title, metrics_found.quote, process_steps_found.quote, visual_signals_found.
+
+Makale İngilizceyse alıntılar İngilizce kalır, bölüm adları İngilizce kalır. Bir alıntıyı veya bölüm adını Türkçeye çevirirsen sistem onu makalede bulamaz, o maddeyi siler ve emeğin boşa gider. Alıntı kopyala, çevirme.
+
 ## ÇIKTI
-Yalnızca aşağıdaki JSON'u dön, başka hiçbir şey yazma. Tüm metin alanları TÜRKÇE olmalıdır.
+Yalnızca aşağıdaki JSON'u dön, başka hiçbir şey yazma.
 {
   "is_valid_article": true,
   "truncation_suspected": <true|false>,
@@ -793,12 +801,43 @@ function groundResponse(parsed, articleText) {
   const sections = Array.isArray(parsed.evidence?.sections) ? parsed.evidence.sections : [];
   const normalizedSections = new Set(sections.map(normalizeForMatch).filter(Boolean));
 
-  const keepGrounded = (items, requiredFields) =>
+  // Elenen maddeler sessizce kaybolmasın; hangi kuralın kaç maddeyi düşürdüğü
+  // yanıtta raporlanır, aksi halde boş kartın sebebi dışarıdan görünmez.
+  const dropReasons = {};
+  const noteDrop = (bucket, reason) => {
+    dropReasons[bucket] ??= {};
+    dropReasons[bucket][reason] = (dropReasons[bucket][reason] ?? 0) + 1;
+  };
+
+  const keepGrounded = (items, requiredFields, bucket) =>
     (Array.isArray(items) ? items : []).filter((item) => {
-      if (!item || typeof item !== "object") return false;
-      if (requiredFields.some((field) => !String(item[field] ?? "").trim())) return false;
-      if (!quoteExistsInArticle(item.evidence_quote, normalizedArticle)) return false;
-      return sectionExists(item.section, normalizedArticle, normalizedSections);
+      if (!item || typeof item !== "object") {
+        noteDrop(bucket, "gecersiz-oge");
+        return false;
+      }
+      const missing = requiredFields.find((field) => !String(item[field] ?? "").trim());
+      if (missing) {
+        noteDrop(bucket, `eksik-alan:${missing}`);
+        return false;
+      }
+      const quoteWords = wordCount(item.evidence_quote);
+      if (!item.evidence_quote) {
+        noteDrop(bucket, "alinti-yok");
+        return false;
+      }
+      if (quoteWords < MIN_QUOTE_WORDS || quoteWords > MAX_QUOTE_WORDS) {
+        noteDrop(bucket, `alinti-uzunlugu:${quoteWords}`);
+        return false;
+      }
+      if (!quoteExistsInArticle(item.evidence_quote, normalizedArticle)) {
+        noteDrop(bucket, "alinti-metinde-bulunamadi");
+        return false;
+      }
+      if (!sectionExists(item.section, normalizedArticle, normalizedSections)) {
+        noteDrop(bucket, "bolum-metinde-bulunamadi");
+        return false;
+      }
+      return true;
     });
 
   const criteriaScores = {};
@@ -870,13 +909,13 @@ function groundResponse(parsed, articleText) {
     applied_weights: appliedWeights,
     excluded_criteria: CRITERIA.filter((key) => !criteriaScores[key].applicable),
     summary: String(parsed.summary ?? "").trim(),
-    strengths: keepGrounded(parsed.strengths, ["title", "detail"]).slice(0, 5),
-    improvements: keepGrounded(parsed.improvements, [
-      "title",
-      "problem",
-      "rewrite",
-      "detail",
-    ]).slice(0, 5),
+    strengths: keepGrounded(parsed.strengths, ["title", "detail"], "strengths").slice(0, 5),
+    improvements: keepGrounded(
+      parsed.improvements,
+      ["title", "problem", "rewrite", "detail"],
+      "improvements"
+    ).slice(0, 5),
+    dropped_feedback: Object.keys(dropReasons).length ? dropReasons : null,
     reader_perspective: flattenReaderPerspective(parsed.reader_perspective),
     headline_and_hook: parsed.headline_and_hook ?? null,
   };
