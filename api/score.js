@@ -10,6 +10,14 @@ const MIN_APPLICABLE_CRITERIA = 4;
 const REQUEST_TIMEOUT_MS = 45000;
 const RATE_LIMIT = { windowMs: 60000, maxRequests: 10 };
 
+// Fonksiyonun toplam bütçesi 60 sn (vercel.json). İçerik çekme zinciri bunun
+// yarısını aşarsa OpenAI çağrısına yer kalmaz, bu yüzden ortak bir son tarihe
+// bağlanır; engelli adımlar zaten hızlı 403 döndüğü için pratikte erken biter.
+const CONTENT_FETCH_BUDGET_MS = 30000;
+const CONTENT_STEP_TIMEOUT_MS = 10000;
+const READER_PROXY_TIMEOUT_MS = 20000;
+const READER_PROXY_BASE = "https://r.jina.ai/";
+
 const CRITERIA = [
   "problem_failure",
   "process_clarity",
@@ -380,14 +388,14 @@ function mediumPostId(articleUrl) {
 
 // Hangi adımın neden düştüğü dışarıdan görülebilsin diye durum bilgisi
 // yutulmuyor; fetchText bunun yalnızca metin isteyen çağrılar için sarmalı.
-async function fetchRaw(url, timeoutMs = 20000) {
+async function fetchRaw(url, timeoutMs = 20000, headers = FETCH_HEADERS) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const response = await fetch(url, {
       redirect: "follow",
       signal: controller.signal,
-      headers: FETCH_HEADERS,
+      headers,
     });
     if (!response.ok) return { text: null, status: response.status };
     return { text: await response.text(), status: response.status };
@@ -452,11 +460,11 @@ function mediumPostIdStrict(articleUrl) {
   return postId && /^[a-f0-9]{8,12}$/i.test(postId) ? postId : null;
 }
 
-async function fetchArticleFromMediumJson(articleUrl, attempts) {
+async function fetchArticleFromMediumJson(articleUrl, attempts, timeoutMs) {
   const postId = mediumPostIdStrict(articleUrl);
   if (!postId) return null;
 
-  const { text, status } = await fetchRaw(`https://medium.com/p/${postId}?format=json`);
+  const { text, status } = await fetchRaw(`https://medium.com/p/${postId}?format=json`, timeoutMs);
   const article = text ? articleFromMediumJson(text) : null;
   attempts.push({
     source: "medium-json",
@@ -467,7 +475,7 @@ async function fetchArticleFromMediumJson(articleUrl, attempts) {
   return article;
 }
 
-async function fetchArticleFromMediumRss(articleUrl, attempts) {
+async function fetchArticleFromMediumRss(articleUrl, attempts, timeoutMs) {
   const postId = mediumPostId(articleUrl);
   if (!postId) return null;
 
@@ -478,7 +486,7 @@ async function fetchArticleFromMediumRss(articleUrl, attempts) {
   }
 
   for (const feedUrl of feedUrls) {
-    const { text: feed, status } = await fetchRaw(feedUrl);
+    const { text: feed, status } = await fetchRaw(feedUrl, timeoutMs);
     if (!feed) {
       attempts.push({ source: "medium-rss", status, usable: false });
       continue;
@@ -523,29 +531,129 @@ async function fetchArticleFromMediumRss(articleUrl, attempts) {
   return null;
 }
 
+// Reader, açık web proxy'si olarak kullanılmasını engellemek için tarayıcı
+// User-Agent'ı taşıyan isteklere 403 döner; kendi tanımlayıcımızı göndeririz.
+const READER_PROXY_HEADERS = {
+  "User-Agent": "article-score/1.0",
+  Accept: "text/plain",
+};
+
+// Reader çıktısında kalan Medium arayüz metinleri; makalenin parçası değiller.
+const READER_NOISE_PATTERNS = [
+  /^press enter or click to view image.*$/gim,
+  /^\d+\s*min read$/gim,
+  /^(follow|share|listen|sign up|sign in)$/gim,
+  /^get .+'s stories in your inbox$/gim,
+];
+
+function markdownToText(markdown) {
+  let text = markdown
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, "")
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
+    .replace(/^#{1,6}\s+/gm, "")
+    .replace(/\*\*([^*]+)\*\*/g, "$1")
+    .replace(/\*([^*]+)\*/g, "$1")
+    .replace(/^>\s?/gm, "")
+    .replace(/^[-*+]\s+/gm, "- ");
+
+  for (const pattern of READER_NOISE_PATTERNS) text = text.replace(pattern, "");
+
+  return text
+    .replace(/[ \t\u00a0]+/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .replace(/^[ \t]+|[ \t]+$/gm, "")
+    .trim();
+}
+
+// Reader yanıtı Title/URL Source/Published Time başlıklarıyla açılır, gövde
+// "Markdown Content:" satırından sonra başlar.
+function articleFromReaderMarkdown(raw) {
+  const marker = raw.indexOf("Markdown Content:");
+  const body = marker >= 0 ? raw.slice(marker + "Markdown Content:".length) : raw;
+
+  // Yazar avatarı resize:fill ile kare kırpılmış gelir; içerik görseli değildir.
+  const images = body.match(/!\[[^\]]*\]\([^)]*\)/g) || [];
+  const visualsCount = images.filter((image) => !/resize:fill:/.test(image)).length;
+
+  const text = markdownToText(body);
+  if (text.length < MIN_ARTICLE_CHARS) return null;
+
+  const title = raw.match(/^Title:\s*(.+)$/m)?.[1]?.trim() || "";
+  return {
+    text: title && !text.startsWith(title) ? `${title}\n\n${text}` : text,
+    visualsCount,
+    source: "reader-proxy",
+  };
+}
+
+async function fetchArticleFromReaderProxy(articleUrl, attempts, timeoutMs) {
+  const { text, status } = await fetchRaw(
+    `${READER_PROXY_BASE}${articleUrl}`,
+    timeoutMs,
+    READER_PROXY_HEADERS
+  );
+  const article = text ? articleFromReaderMarkdown(text) : null;
+  attempts.push({
+    source: "reader-proxy",
+    status,
+    usable: Boolean(article),
+    ...(text && !article ? { detail: "yanıt makale metnine çevrilemedi" } : {}),
+  });
+  return article;
+}
+
 // Denenen her kaynağı durumuyla birlikte kaydeder; başarısızlıkta hangi adımın
 // neden düştüğü yanıtta görünsün diye article ile birlikte attempts döner.
 async function fetchArticleFromUrl(url) {
   const normalized = extractUrl(url) || url;
   const attempts = [];
+  const deadline = Date.now() + CONTENT_FETCH_BUDGET_MS;
 
-  // Medium HTML'i Vercel IP'lerinden engellenir. JSON uç noktası hem bu engelin
-  // dışında kalır hem de başlık sırası, liste maddeleri ve gerçek görsel sayısı
-  // gibi HTML kazımada kaybolan bilgileri verdiği için önce o denenir.
+  // Kalan bütçeyi aşan bir adım başlatılmaz; null dönerse adım atlanmıştır.
+  const budgetFor = (preferred, source) => {
+    const remaining = deadline - Date.now();
+    if (remaining <= 0) {
+      attempts.push({ source, status: "bütçe doldu", usable: false });
+      return null;
+    }
+    return Math.min(preferred, remaining);
+  };
+
+  // Medium HTML'i Vercel IP'lerinden engellenir. JSON uç noktası engelin dışında
+  // kalırsa başlık sırası, liste maddeleri ve gerçek görsel sayısını da verdiği
+  // için en zengin kaynak odur; bu yüzden ilk sırada denenir.
   if (mediumPostIdStrict(normalized)) {
-    const fromJson = await fetchArticleFromMediumJson(normalized, attempts);
-    if (fromJson) return { article: fromJson, attempts };
+    const budget = budgetFor(CONTENT_STEP_TIMEOUT_MS, "medium-json");
+    if (budget) {
+      const fromJson = await fetchArticleFromMediumJson(normalized, attempts, budget);
+      if (fromJson) return { article: fromJson, attempts };
+    }
   }
 
-  const { text: html, status } = await fetchRaw(normalized);
-  const fromHtml = articleFromHtml(html, "html");
-  attempts.push({ source: "html", status, usable: Boolean(fromHtml) });
-  if (fromHtml) return { article: fromHtml, attempts };
+  const htmlBudget = budgetFor(CONTENT_STEP_TIMEOUT_MS, "html");
+  if (htmlBudget) {
+    const { text: html, status } = await fetchRaw(normalized, htmlBudget);
+    const fromHtml = articleFromHtml(html, "html");
+    attempts.push({ source: "html", status, usable: Boolean(fromHtml) });
+    if (fromHtml) return { article: fromHtml, attempts };
+  }
 
-  // RSS yalnızca yayının son 10 yazısını içerir, bu yüzden en sonda kalır.
+  // RSS üçüncü taraf içermediği için aracıdan önce denenir, ancak yalnızca
+  // yayının son 10 yazısını kapsar.
   if (/medium\.com/i.test(normalized)) {
-    const fromRss = await fetchArticleFromMediumRss(normalized, attempts);
-    if (fromRss) return { article: fromRss, attempts };
+    const rssBudget = budgetFor(CONTENT_STEP_TIMEOUT_MS, "medium-rss");
+    if (rssBudget) {
+      const fromRss = await fetchArticleFromMediumRss(normalized, attempts, rssBudget);
+      if (fromRss) return { article: fromRss, attempts };
+    }
+  }
+
+  // Son çare: içeriği kendi IP'sinden okuyan aracı. Buraya yalnızca doğrudan
+  // yolların tamamı kapalıysa gelinir, yani dışarı çıkan istek en aza iner.
+  const proxyBudget = budgetFor(READER_PROXY_TIMEOUT_MS, "reader-proxy");
+  if (proxyBudget) {
+    const fromProxy = await fetchArticleFromReaderProxy(normalized, attempts, proxyBudget);
+    if (fromProxy) return { article: fromProxy, attempts };
   }
 
   return { article: null, attempts };
