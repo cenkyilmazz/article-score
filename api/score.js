@@ -160,9 +160,12 @@ Kanıt güçlüyse yüksek puan vermekten çekinme. Aşağı yönlü çıpa kada
 - Kriterleri birbirinden bağımsız değerlendir; puanları birbirine veya ortalama bir değere yaklaştırma.
 
 ## AŞAMA 4 — GERİ BİLDİRİM
-- Güçlü yönler ve iyileştirmeler için SABİT SAYI YOKTUR. Kanıtı olan kadar madde yaz (en fazla 5). Kanıtın yoksa madde yazma; az sayıda sağlam madde, çok sayıda uydurma maddeden iyidir.
-- Ancak kanıt varken madde sayısını kısma. Normal uzunlukta bir makalede genellikle 3-5 güçlü yön ve 3-5 iyileştirme için birebir alıntı bulunabilir. Bir maddeyi yalnızca gerçekten alıntı bulamadığın için ele; "emin olamadım" gerekçesiyle eleme.
-- Her maddede "evidence_quote" zorunludur: metinden birebir kopyalanmış ${MIN_QUOTE_WORDS}-${MAX_QUOTE_WORDS} kelimelik bir alıntı. Alıntı üretemiyorsan o maddeyi tamamen çıkar.
+Bu bölümün amacı yazara işe yarar geri bildirim vermektir. Boş bir liste yazara hiçbir şey kazandırmaz ve değerlendirmeyi işe yaramaz hale getirir.
+
+- strengths ve improvements dizileri BOŞ DÖNMEMELİDİR. Değerlendirilmeye değer her makalede en az 2 güçlü yön ve en az 2 iyileştirme için birebir alıntı bulunur. Hedefin 3-5 madde olsun, üst sınır 5'tir.
+- Alıntı bulmak ayrı bir iş değil: Aşama 1'de zaten metrics_found ve process_steps_found içine birebir alıntılar çıkardın. Bu alıntıları strengths ve improvements maddelerinde doğrudan yeniden kullan. Aşama 1'de kanıt bulabildiysen Aşama 4'te madde yazabilirsin demektir.
+- "evidence_quote" bir yazma işi değil, kopyalama işidir: metinden ilgili cümleyi seç ve harfi harfine yapıştır. Kendi cümleni kurma, özetleme, kısaltma, çevirme.
+- Her maddede "evidence_quote" zorunludur: metinden birebir kopyalanmış ${MIN_QUOTE_WORDS}-${MAX_QUOTE_WORDS} kelimelik bir alıntı. Alıntısı olmayan madde sistem tarafından silinir, bu yüzden alıntısız madde yazma — ama madde yazmamayı da ilk çözüm olarak görme, önce uygun bir alıntı ara.
 - Her iyileştirmede yeniden yazım örneği ("rewrite") zorunludur: yazarın doğrudan kullanabileceği, birebir yazılmış somut bir metin.
 - Her iyileştirmede ayrıca "detail" alanı zorunludur: hangi bölümün neden sorunlu olduğunu ve nasıl düzeltileceğini en az 3 cümleyle anlat.
 - "Görsel ekle", "daha fazla metrik ekle", "başlık daha ilgi çekici olabilir" gibi genel öneriler yasaktır. Öneri hangi bölümde, hangi cümle yerine, ne yazılacağını söylemelidir.
@@ -228,13 +231,24 @@ Yalnızca aşağıdaki JSON'u dön, başka hiçbir şey yazma.
   }
 }
 
+## ÖRNEK MADDE (yalnızca biçim referansı, içeriğini kopyalama)
+Diyelim makalede şu cümle geçiyor:
+"We reduced password reset tickets by 37% within two quarters"
+Bu cümleye dayalı doğru bir strengths maddesi şöyledir:
+{"title": "Sonucun ölçülmüş bir oranla verilmesi", "section": "Results", "detail": "Yazar iyileştirmenin etkisini somut bir oranla ve zaman aralığıyla paylaşıyor. Bu, iddiayı doğrulanabilir hale getiriyor. Okuyucu benzer bir işi kendi ekibinde savunurken bu ölçüyü referans alabilir.", "evidence_quote": "We reduced password reset tickets by 37% within two quarters"}
+Dikkat: açıklama alanları Türkçe, evidence_quote ve section makaledeki hâliyle İngilizce kalmış. evidence_quote metinden kopyalanmış, yeniden yazılmamış.
+
 ## SON KONTROL (JSON'u vermeden önce kendine sor)
 - Yazdığım her bölüm adı metinde birebir geçiyor mu?
 - Her evidence_quote metinden kopyalanabilir mi, yoksa kendi cümlem mi?
 - Kanıtsız kalan bir kriterde 40 üstü puan verdim mi?
 - Olasılık bildiren kelime kullandım mı?
 - Metinden ölçemediğim bir kriteri puanladım mı?
-Bir madde bu kontrolü geçmiyorsa o maddeyi çıkar.`;
+Bir madde bu kontrolü geçmiyorsa o maddeyi çıkar.
+
+Son olarak ters yönde kontrol et:
+- strengths veya improvements boş mu kaldı? Boşsa metne dön ve alıntısını bulabildiğin maddeleri yaz; boş dizi kabul edilebilir bir cevap değildir.
+- Aşama 1'de çıkardığım alıntıları geri bildirim maddelerinde kullandım mı?`;
 
 const HTML_ENTITIES = {
   "&amp;": "&",
