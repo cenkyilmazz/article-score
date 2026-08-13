@@ -166,7 +166,8 @@ Bu bölümün amacı yazara işe yarar geri bildirim vermektir. Boş bir liste y
 - Alıntı bulmak ayrı bir iş değil: Aşama 1'de zaten metrics_found ve process_steps_found içine birebir alıntılar çıkardın. Bu alıntıları strengths ve improvements maddelerinde doğrudan yeniden kullan. Aşama 1'de kanıt bulabildiysen Aşama 4'te madde yazabilirsin demektir.
 - "evidence_quote" bir yazma işi değil, kopyalama işidir: metinden ilgili cümleyi seç ve harfi harfine yapıştır. Kendi cümleni kurma, özetleme, kısaltma, çevirme.
 - Her maddede "evidence_quote" zorunludur: metinden birebir kopyalanmış ${MIN_QUOTE_WORDS}-${MAX_QUOTE_WORDS} kelimelik bir alıntı. Alıntısı olmayan madde sistem tarafından silinir, bu yüzden alıntısız madde yazma — ama madde yazmamayı da ilk çözüm olarak görme, önce uygun bir alıntı ara.
-- Her iyileştirmede yeniden yazım örneği ("rewrite") zorunludur: yazarın doğrudan kullanabileceği, birebir yazılmış somut bir metin.
+- İYİLEŞTİRMELERDE ALINTININ İŞLEVİ FARKLIDIR. Alıntı, eksikliği kanıtlamaz — eleştirdiğin YERİ işaret eder. Metinde "burada metrik yok" diyen bir cümle olmayacağı için böyle bir alıntı arama. Bunun yerine sorunun bulunduğu bölümden, iyileştirilmesi gereken cümlenin kendisini alıntıla: eksik kalan iddianın cümlesini, belirsiz kalan açıklamayı, zayıf geçişi. Her eleştiri metnin bir yerine dokunur; o yeri alıntıla.
+- Her iyileştirmede yeniden yazım örneği ("rewrite") zorunludur: yazarın doğrudan kullanabileceği, birebir yazılmış somut bir metin. Alıntıladığın cümlenin yerine ne yazılacağını göster.
 - Her iyileştirmede ayrıca "detail" alanı zorunludur: hangi bölümün neden sorunlu olduğunu ve nasıl düzeltileceğini en az 3 cümleyle anlat.
 - "Görsel ekle", "daha fazla metrik ekle", "başlık daha ilgi çekici olabilir" gibi genel öneriler yasaktır. Öneri hangi bölümde, hangi cümle yerine, ne yazılacağını söylemelidir.
 - Başlık geri bildirimi yalnızca metinde tespit ettiğin gerçek başlık üzerine olmalıdır; başlık tespit edilemiyorsa headline_feedback null olsun.
@@ -237,6 +238,12 @@ Diyelim makalede şu cümle geçiyor:
 Bu cümleye dayalı doğru bir strengths maddesi şöyledir:
 {"title": "Sonucun ölçülmüş bir oranla verilmesi", "section": "Results", "detail": "Yazar iyileştirmenin etkisini somut bir oranla ve zaman aralığıyla paylaşıyor. Bu, iddiayı doğrulanabilir hale getiriyor. Okuyucu benzer bir işi kendi ekibinde savunurken bu ölçüyü referans alabilir.", "evidence_quote": "We reduced password reset tickets by 37% within two quarters"}
 Dikkat: açıklama alanları Türkçe, evidence_quote ve section makaledeki hâliyle İngilizce kalmış. evidence_quote metinden kopyalanmış, yeniden yazılmamış.
+
+Aynı makalede şu cümle de geçiyor olsun:
+"The new flow was much better for our users"
+Bu cümleye dayalı doğru bir improvements maddesi şöyledir:
+{"title": "Genel iyilik iddiasının ölçüye bağlanmaması", "section": "Redesign", "problem": "İyileşme iddiası hiçbir ölçüye dayanmıyor.", "rewrite": "The new flow cut average completion time from 4:10 to 2:35 across 1,200 sessions.", "detail": "Bu cümle iyileşmeyi öne sürüyor ama neyin ne kadar iyileştiğini söylemiyor. Okuyucu iddiayı doğrulayamıyor ve kendi ekibine taşıyamıyor. Yazar burada Results bölümünde paylaştığı ölçüyü cümlenin içine taşımalı.", "evidence_quote": "The new flow was much better for our users"}
+Dikkat: alıntı bir eksikliği kanıtlamıyor, düzeltilmesi gereken cümlenin ta kendisi. Eleştiri her zaman metinde bir yere dokunur.
 
 ## SON KONTROL (JSON'u vermeden önce kendine sor)
 - Yazdığım her bölüm adı metinde birebir geçiyor mu?
@@ -924,11 +931,12 @@ function groundResponse(parsed, articleText) {
     excluded_criteria: CRITERIA.filter((key) => !criteriaScores[key].applicable),
     summary: String(parsed.summary ?? "").trim(),
     strengths: keepGrounded(parsed.strengths, ["title", "detail"], "strengths").slice(0, 5),
-    improvements: keepGrounded(
-      parsed.improvements,
-      ["title", "problem", "rewrite", "detail"],
-      "improvements"
-    ).slice(0, 5),
+    // Arayüz yalnızca title ve detail gösteriyor; problem/rewrite eksikse madde
+    // zayıflar ama silinmemeli, aksi halde gösterilebilir bir geri bildirim yok olur.
+    improvements: keepGrounded(parsed.improvements, ["title", "detail"], "improvements").slice(
+      0,
+      5
+    ),
     dropped_feedback: Object.keys(dropReasons).length ? dropReasons : null,
     reader_perspective: flattenReaderPerspective(parsed.reader_perspective),
     headline_and_hook: parsed.headline_and_hook ?? null,
