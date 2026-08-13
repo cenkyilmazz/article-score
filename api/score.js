@@ -310,17 +310,21 @@ const FETCH_HEADERS = {
   "Accept-Language": "tr,en;q=0.8",
 };
 
+// Başlıklar ve paragraflar tek geçişte eşleştirilir; ayrı ayrı toplanırsa
+// bölüm başlıkları metnin sonuna yığılır ve yapı bilgisi kaybolur.
 function extractMediumParagraphs(html) {
-  const paragraphs = [
-    ...(html.match(/<p[^>]*class="[^"]*pw-post-body-paragraph[^"]*"[^>]*>[\s\S]*?<\/p>/gi) || []),
-    ...(html.match(/<h[1-3][^>]*>[\s\S]*?<\/h[1-3]>/gi) || []),
-  ];
-  if (!paragraphs.length) return "";
+  const blocks =
+    html.match(
+      /<p[^>]*class="[^"]*pw-post-body-paragraph[^"]*"[^>]*>[\s\S]*?<\/p>|<h[1-3][^>]*>[\s\S]*?<\/h[1-3]>/gi
+    ) || [];
+  if (!blocks.length) return "";
 
-  const titleMatch = html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i);
-  const title = titleMatch ? htmlToText(titleMatch[1]) : "";
-  const body = paragraphs.map((block) => htmlToText(block)).filter(Boolean).join("\n\n");
-  return [title, body].filter(Boolean).join("\n\n");
+  const lines = [];
+  for (const block of blocks) {
+    const line = htmlToText(block);
+    if (line && line !== lines[lines.length - 1]) lines.push(line);
+  }
+  return lines.join("\n\n");
 }
 
 function articleFromHtml(html, source = "html") {
@@ -392,6 +396,65 @@ async function fetchText(url, timeoutMs = 20000) {
   }
 }
 
+// Medium'un kendi JSON uç noktasındaki paragraf tipleri.
+const MEDIUM_PARAGRAPH_TYPE = {
+  IMAGE: 4,
+  LIST_ITEM: 9,
+  ORDERED_LIST_ITEM: 10,
+};
+
+// Yanıt, XSSI koruması için `])}while(1);</x>` öneki ile başlar.
+function parseMediumJson(raw) {
+  const start = raw.indexOf("{");
+  if (start < 0) return null;
+  try {
+    return JSON.parse(raw.slice(start));
+  } catch {
+    return null;
+  }
+}
+
+function articleFromMediumJson(raw) {
+  const paragraphs = parseMediumJson(raw)?.payload?.value?.content?.bodyModel?.paragraphs;
+  if (!Array.isArray(paragraphs) || !paragraphs.length) return null;
+
+  const lines = [];
+  let visualsCount = 0;
+
+  for (const paragraph of paragraphs) {
+    if (paragraph?.type === MEDIUM_PARAGRAPH_TYPE.IMAGE) visualsCount += 1;
+
+    const text = String(paragraph?.text ?? "").trim();
+    if (!text) continue;
+
+    const isListItem =
+      paragraph.type === MEDIUM_PARAGRAPH_TYPE.LIST_ITEM ||
+      paragraph.type === MEDIUM_PARAGRAPH_TYPE.ORDERED_LIST_ITEM;
+    lines.push(isListItem ? `- ${text}` : text);
+  }
+
+  const text = lines.join("\n\n");
+  if (text.length < MIN_ARTICLE_CHARS) return null;
+
+  return { text, visualsCount, source: "medium-json" };
+}
+
+// Medium yazılarının slug'ı 8-12 haneli onaltılık bir post id ile biter.
+function mediumPostIdStrict(articleUrl) {
+  const postId = mediumPostId(articleUrl);
+  return postId && /^[a-f0-9]{8,12}$/i.test(postId) ? postId : null;
+}
+
+async function fetchArticleFromMediumJson(articleUrl) {
+  const postId = mediumPostIdStrict(articleUrl);
+  if (!postId) return null;
+
+  const raw = await fetchText(`https://medium.com/p/${postId}?format=json`);
+  if (!raw) return null;
+
+  return articleFromMediumJson(raw);
+}
+
 async function fetchArticleFromMediumRss(articleUrl) {
   const postId = mediumPostId(articleUrl);
   if (!postId) return null;
@@ -430,11 +493,19 @@ async function fetchArticleFromMediumRss(articleUrl) {
 async function fetchArticleFromUrl(url) {
   const normalized = extractUrl(url) || url;
 
+  // Medium HTML'i Vercel IP'lerinden engellenir. JSON uç noktası hem bu engelin
+  // dışında kalır hem de başlık sırası, liste maddeleri ve gerçek görsel sayısı
+  // gibi HTML kazımada kaybolan bilgileri verdiği için önce o denenir.
+  if (mediumPostIdStrict(normalized)) {
+    const fromJson = await fetchArticleFromMediumJson(normalized);
+    if (fromJson) return fromJson;
+  }
+
   const html = await fetchText(normalized);
   const fromHtml = articleFromHtml(html, "html");
   if (fromHtml) return fromHtml;
 
-  // Vercel IP'lerinden Medium HTML'i sık engellenir; RSS genelde açık kalır.
+  // RSS yalnızca yayının son 10 yazısını içerir, bu yüzden en sonda kalır.
   if (/medium\.com/i.test(normalized)) {
     const fromRss = await fetchArticleFromMediumRss(normalized);
     if (fromRss) return fromRss;
@@ -533,6 +604,33 @@ function sectionExists(section, normalizedArticle, normalizedSections) {
     GENERIC_SECTIONS.has(normalized) ||
     normalizedArticle.includes(normalized)
   );
+}
+
+// Model bu alanları {section, issue} gibi objeler halinde döndürüyor; arayüz
+// düz string listesi beklediği için burada tek satıra indirgenir.
+function flattenReaderPerspective(readerPerspective) {
+  if (!readerPerspective || typeof readerPerspective !== "object") return null;
+
+  const toStrings = (items, bodyKeys) =>
+    (Array.isArray(items) ? items : [])
+      .map((item) => {
+        if (typeof item === "string") return item.trim();
+        if (!item || typeof item !== "object") return "";
+        const section = String(item.section ?? "").trim();
+        const body = bodyKeys
+          .map((key) => String(item[key] ?? "").trim())
+          .find(Boolean);
+        if (!body) return section;
+        return section ? `${section}: ${body}` : body;
+      })
+      .filter(Boolean);
+
+  return {
+    takeaways: toStrings(readerPerspective.takeaways, ["takeaway", "text", "detail"]),
+    confusion_points: toStrings(readerPerspective.confusion_points, ["issue", "reason", "detail"]),
+    drop_off_points: toStrings(readerPerspective.drop_off_points, ["reason", "issue", "detail"]),
+    skimmability: String(readerPerspective.skimmability ?? "").trim() || null,
+  };
 }
 
 function clampScore(value) {
@@ -634,7 +732,7 @@ function groundResponse(parsed, articleText) {
       "rewrite",
       "detail",
     ]).slice(0, 5),
-    reader_perspective: parsed.reader_perspective ?? null,
+    reader_perspective: flattenReaderPerspective(parsed.reader_perspective),
     headline_and_hook: parsed.headline_and_hook ?? null,
   };
 }
