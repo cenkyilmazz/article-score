@@ -113,7 +113,13 @@ Meta bloğu yoksa görsel sayısı bilinmiyor demektir; bu durumda yalnızca met
 2. Bölüm adları ve alıntılar BİREBİR metinden alınmalıdır. Metinde geçmeyen bir başlık veya cümle uydurmak en ciddi hatadır.
 3. "olabilir", "muhtemelen", "yapılmış olabilir", "görünüyor" gibi olasılık ifadeleri KULLANMA. Bir şey metinde ya vardır ya yoktur.
 4. Bir kriteri verilen metinden ölçemiyorsan o kriteri puanlamak yerine "applicable": false yap ve gerekçesini yaz. Tahminî puan verme.
-5. Görselleri sen göremezsin. Görsel puanı yalnızca iki kanıta dayanır: (a) [META] satırındaki görsel sayısı, (b) metinde BİREBİR geçen görsel işaretleri — "Press enter or click to view image" benzeri ifadeler, "Şekil 3" / "Görsel 2" / "Figure 1" numaralandırmaları ve figure açıklamaları. İkisi de yoksa görsel kriteri "applicable": false olmalıdır. Bunun dışında metinden görsel varlığı çıkarmaya çalışma.
+5. Görselleri sen göremezsin (piksel içeriğini okuyamazsın). Görsel varlığını ve kullanımını şu kanıtlarla okursun — öncelik sırası bağlayıcıdır:
+   (a) [META] gorsel_sayisi bir sayıysa makalede o kadar görsel vardır. Metinde "Şekil 1" / figure açıklaması / [VISUAL] satırı olmasa bile görseller YOK sayılmaz.
+   (b) [META] gorsel_sayisi >= 1 ise visuals için "applicable": false YAZILAMAZ. "Görsel yok", "görsel destek sunmuyor", "ekran görüntüsü eklenmemiş", "görsel işaretleri eksik" demek YASAKTIR.
+   (c) Metindeki [VISUAL kind=... alt=... caption=... index=N] satırları varsa bunları görsel kanıt olarak oku; visual_signals_found içine birebir yaz; konum olarak komşu bölüm başlığına bağla.
+   (d) Metin işaretleri de kanıttır: "Press enter or click to view image", "Şekil/Görsel/Figure/Fig./Tablo/Grafik + numara", "screenshot" / "ekran görüntüsü", "as shown above/below", "yukarıdaki/aşağıdaki görsel", markdown görsel kalıntıları, figcaption/alt metinleri.
+   (e) [META] yok ve (c)+(d) de yoksa visuals "applicable": false olmalıdır. Bu durumda bile UI/dashboard anlatısına bakıp "görsel eksik" diye improvement UYDURMA.
+   (f) Görsellerin içeriğini hayal etme; yalnızca sayı, [VISUAL] alanları, metin işaretleri ve çevresindeki bölüm bağlamıyla puanla.
 6. Metin ortasında kesilmiş görünüyorsa bunu "truncation_suspected": true ile bildir ve sonuç/metrik ile ilgili kriterleri düşük puanlamak yerine "applicable": false yap.
 7. Toplam skoru SEN HESAPLAMA. Yalnızca kriter puanlarını ver; toplam skor uygulama tarafında hesaplanır.
 
@@ -123,10 +129,11 @@ Metinden şunları birebir çıkar:
 - Somut metrikler: sayı, yüzde, süre, maliyet, oran içeren ifadeler (her biri için birebir alıntı ve bulunduğu bölüm)
 - Süreç adımları: yazarın ne yaptığını anlatan somut adımlar (birebir alıntı)
 - Veri kaynakları: araç, sistem, ölçüm yöntemi, örneklem bilgisi
-- Görsel işaretleri: metinde birebir geçen görsel referansları ve figure açıklamaları
-- [META] varsa görsel sayısı
+- Görsel işaretleri: [VISUAL ...] satırları ve metinde birebir geçen görsel referansları / figure açıklamaları
+- [META] varsa görsel sayısı → evidence.visuals_count
 
 Kanıt listesi boşsa ilgili kriterde 40'ın üzerinde puan veremezsin. Bu kural puanlamanın çıpasıdır.
+İstisna — visuals: [META] gorsel_sayisi >= 1 ise görsel kanıt BOŞ sayılmaz; sayı tek başına kanıttır.
 
 ## AŞAMA 2 — MAKALE TÜRÜ
 Türü belirle: "teknik_rehber", "vaka_calismasi", "strateji_fikir", "deneyim_aktarimi", "diger".
@@ -136,7 +143,7 @@ Tür, hangi kriterlerin uygulanabilir olduğunu etkiler. Örnek: bir teknik rehb
 Kriterler:
 - problem_failure: Gerçek bir problem veya başarısızlık açıkça ortaya konmuş mu?
 - process_clarity: Süreç adım adım ve izlenebilir biçimde aktarılmış mı?
-- visuals: Görsel kullanımı içeriği destekliyor mu? (yalnızca [META] sayısı ve metindeki görsel işaretleri ile)
+- visuals: Görsel kullanımı içeriği destekliyor mu? Piksel göremezsin; [META] sayısı, [VISUAL] satırları ve metin işaretleriyle okursun. "Metinde figure numarası yok" diye cezalandırma.
 - success_metrics: Somut, ölçülmüş sonuçlar var mı?
 - insight_depth: Öğrenilen dersler yüzeysel mi, özgün ve derin mi?
 - transferability: Okuyucu bunu kendi işine taşıyabilir mi?
@@ -156,6 +163,7 @@ Her kriter puanı, Aşama 1'de çıkardığın kanıta atıfla gerekçelendirilm
 Kanıt güçlüyse yüksek puan vermekten çekinme. Aşağı yönlü çıpa kadar yukarı yönlü çıpa da bağlayıcıdır:
 - Aşama 1'de üç veya daha fazla somut metrik listelediysen success_metrics ve data_quality 70'in altında olamaz.
 - Aşama 1'de üç veya daha fazla somut süreç adımı listelediysen process_clarity 70'in altında olamaz.
+- [META] gorsel_sayisi >= 1 ise visuals 40'ın altında olamaz; >= 3 ise visuals 60'ın altında olamaz. Metinde [VISUAL] veya figure işareti olmaması bu çıpaları iptal etmez.
 - Vaka çalışmasında ölçülmüş bir sonuç varsa bunu düşük puanlamak hatadır.
 - Kriterleri birbirinden bağımsız değerlendir; puanları birbirine veya ortalama bir değere yaklaştırma.
 
@@ -170,6 +178,7 @@ Bu bölümün amacı yazara işe yarar geri bildirim vermektir. Boş bir liste y
 - Her iyileştirmede yeniden yazım örneği ("rewrite") zorunludur: yazarın doğrudan kullanabileceği, birebir yazılmış somut bir metin. Alıntıladığın cümlenin yerine ne yazılacağını göster.
 - Her iyileştirmede ayrıca "detail" alanı zorunludur: hangi bölümün neden sorunlu olduğunu ve nasıl düzeltileceğini en az 3 cümleyle anlat.
 - "Görsel ekle", "daha fazla metrik ekle", "başlık daha ilgi çekici olabilir" gibi genel öneriler yasaktır. Öneri hangi bölümde, hangi cümle yerine, ne yazılacağını söylemelidir.
+- [META] gorsel_sayisi >= 1 veya metinde [VISUAL] / görsel işareti varken improvements içinde görsel eksikliği maddesi YAZMA (ör. "Görsel destek eksikliği", "Görsel işaretlerinin eksikliği", "Ekran görüntüsü ekle"). Görsel improvement yalnızca gorsel_sayisi === 0 veya META yok + hiç işaret yokken, belirli bir cümleye bağlı yazılabilir.
 - Başlık geri bildirimi yalnızca metinde tespit ettiğin gerçek başlık üzerine olmalıdır; başlık tespit edilemiyorsa headline_feedback null olsun.
 
 ## GEÇERSİZ İÇERİK
@@ -199,7 +208,7 @@ Yalnızca aşağıdaki JSON'u dön, başka hiçbir şey yazma.
       {"quote": "<birebir alıntı>", "section": "<bölüm>"}
     ],
     "data_sources_found": ["<araç/yöntem/örneklem>"],
-    "visual_signals_found": ["<metinde birebir geçen görsel işareti veya figure açıklaması>"],
+    "visual_signals_found": ["<[VISUAL ...] satırı veya metinde birebir geçen görsel işareti>"],
     "visuals_count": <sayı veya null>
   },
   "criteria_scores": {
@@ -251,6 +260,7 @@ Dikkat: alıntı bir eksikliği kanıtlamıyor, düzeltilmesi gereken cümlenin 
 - Kanıtsız kalan bir kriterde 40 üstü puan verdim mi?
 - Olasılık bildiren kelime kullandım mı?
 - Metinden ölçemediğim bir kriteri puanladım mı?
+- [META] gorsel_sayisi >= 1 iken "görsel yok/eksik" improvement yazdım mı? Yazdıysam sil.
 Bir madde bu kontrolü geçmiyorsa o maddeyi çıkar.
 
 Son olarak ters yönde kontrol et:
