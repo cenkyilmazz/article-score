@@ -298,11 +298,17 @@ function countImages(html) {
   return (html.match(/<img\b/gi) || []).length;
 }
 
-// Metinden çıkarımda <img> etiketleri kaybolur ama Medium'un görsel
-// işaretleri ve figure numaralandırmaları metinde kalır.
+function countVisualPlaceholders(text) {
+  return (String(text).match(/\[VISUAL\b/gi) || []).length;
+}
+
+// Metinden çıkarımda <img> etiketleri kaybolur; pipeline bunları [VISUAL]
+// satırına çevirir. Figure numaralandırmaları ve eski Medium UI metinleri de kalır.
 const VISUAL_TEXT_SIGNALS = [
+  /\[VISUAL\b[^\]]*\]/gi,
   /press enter or click to view image[^\n]*/gi,
   /\b(şekil|sekil|görsel|gorsel|figure|fig\.|tablo|grafik)\s*\d+/gi,
+  /\b(screenshot|ekran görüntüsü|as shown (above|below)|yukarıdaki görsel|aşağıdaki görsel)\b/gi,
 ];
 
 function countVisualSignalsInText(text) {
@@ -312,18 +318,113 @@ function countVisualSignalsInText(text) {
   );
 }
 
-// Aynı görsel hem <img> hem de altındaki açıklama olarak sayılabileceği için
-// iki sinyalin toplamı değil büyüğü alınır.
+// Aynı görsel hem <img> hem [VISUAL] hem açıklama olarak sayılabileceği için
+// sinyallerin toplamı değil büyüğü alınır.
 function resolveVisualsCount(html, text) {
-  return Math.max(countImages(html), countVisualSignalsInText(text));
+  return Math.max(
+    countImages(html),
+    countVisualPlaceholders(text),
+    countVisualSignalsInText(text)
+  );
+}
+
+function sanitizeVisualAttr(value) {
+  return String(value ?? "")
+    .replace(/[\[\]"]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 200);
+}
+
+function inferVisualKind({ alt = "", caption = "", url = "" } = {}) {
+  const blob = `${alt} ${caption} ${url}`.toLowerCase();
+  if (/chart|graph|grafana|plot|histogram|heatmap|throughput/.test(blob)) return "chart";
+  if (/diagram|architecture|flowchart|schema|uml|sequence/.test(blob)) return "diagram";
+  if (/screenshot|screen shot|dashboard|mockup|ekran|ui\b/.test(blob)) return "screenshot";
+  if (/\btable\b|tablo/.test(blob)) return "table";
+  // Medium CDN (miro.medium.com) içerik görselidir; harici embed değildir.
+  if (/(?:^|[^\w.])(?:figma|youtube|loom|iframe)\b/.test(blob) || /\/\/(?:www\.)?miro\.com\b/.test(blob)) {
+    return "embed";
+  }
+  if (/\.gif(?:\?|$)/i.test(url)) return "embed";
+  return "image";
+}
+
+function formatVisualPlaceholder({ kind = "image", alt = "", caption = "", index } = {}) {
+  const parts = [
+    `kind=${kind || "image"}`,
+    `alt="${sanitizeVisualAttr(alt)}"`,
+    `caption="${sanitizeVisualAttr(caption)}"`,
+  ];
+  if (index != null) parts.push(`index=${index}`);
+  return `[VISUAL ${parts.join(" ")}]`;
+}
+
+function isDecorativeImageUrl(url) {
+  return /resize:fill:|\/favicon|data:image\/svg\+xml/i.test(String(url ?? ""));
+}
+
+function visualPlaceholderFromImgTag(tag, index) {
+  const alt = tag.match(/\balt=["']([^"']*)["']/i)?.[1] || "";
+  const src = tag.match(/\bsrc=["']([^"']*)["']/i)?.[1] || "";
+  if (isDecorativeImageUrl(src)) return null;
+  return formatVisualPlaceholder({
+    kind: inferVisualKind({ alt, url: src }),
+    alt,
+    index,
+  });
 }
 
 function htmlToText(html) {
+  let visualIndex = 0;
+
   const withoutNoise = html
-    .replace(/<(script|style|noscript|svg|iframe)\b[\s\S]*?<\/\1>/gi, " ")
+    .replace(/<(script|style|noscript|svg)\b[\s\S]*?<\/\1>/gi, " ")
     .replace(/<!--[\s\S]*?-->/g, " ");
 
-  const withBreaks = withoutNoise
+  // figure + img, düz metne düşmeden önce [VISUAL] satırına çevrilir.
+  const withVisuals = withoutNoise
+    .replace(/<figure\b[^>]*>([\s\S]*?)<\/figure>/gi, (_, inner) => {
+      const imgTag = inner.match(/<img\b[^>]*>/i)?.[0];
+      const captionHtml = inner.match(/<figcaption\b[^>]*>([\s\S]*?)<\/figcaption>/i)?.[1] || "";
+      const caption = decodeEntities(captionHtml.replace(/<[^>]+>/g, " ")).replace(/\s+/g, " ").trim();
+      if (!imgTag) {
+        return caption ? `\n\n${caption}\n\n` : "\n\n";
+      }
+      const src = imgTag.match(/\bsrc=["']([^"']*)["']/i)?.[1] || "";
+      if (isDecorativeImageUrl(src)) return caption ? `\n\n${caption}\n\n` : "\n\n";
+      visualIndex += 1;
+      const alt = imgTag.match(/\balt=["']([^"']*)["']/i)?.[1] || "";
+      const placeholder = formatVisualPlaceholder({
+        kind: inferVisualKind({ alt, caption, url: src }),
+        alt,
+        caption,
+        index: visualIndex,
+      });
+      return `\n\n${placeholder}\n\n`;
+    })
+    .replace(/<img\b[^>]*>/gi, (tag) => {
+      visualIndex += 1;
+      const placeholder = visualPlaceholderFromImgTag(tag, visualIndex);
+      if (!placeholder) {
+        visualIndex -= 1;
+        return " ";
+      }
+      return `\n\n${placeholder}\n\n`;
+    })
+    .replace(/<iframe\b[^>]*>[\s\S]*?<\/iframe>/gi, (tag) => {
+      const src = tag.match(/\bsrc=["']([^"']*)["']/i)?.[1] || "";
+      if (!src) return " ";
+      visualIndex += 1;
+      return `\n\n${formatVisualPlaceholder({
+        kind: inferVisualKind({ url: src }),
+        alt: "",
+        caption: src.slice(0, 120),
+        index: visualIndex,
+      })}\n\n`;
+    });
+
+  const withBreaks = withVisuals
     .replace(/<\/(p|div|section|article|li|tr|h[1-6]|blockquote|figcaption|pre)>/gi, "\n\n")
     .replace(/<br\s*\/?>/gi, "\n")
     .replace(/<li\b[^>]*>/gi, "- ");
@@ -357,18 +458,57 @@ const FETCH_HEADERS = {
   "Accept-Language": "tr,en;q=0.8",
 };
 
-// Başlıklar ve paragraflar tek geçişte eşleştirilir; ayrı ayrı toplanırsa
-// bölüm başlıkları metnin sonuna yığılır ve yapı bilgisi kaybolur.
+// Başlıklar, paragraflar ve görseller tek geçişte eşleştirilir; ayrı ayrı
+// toplanırsa bölüm başlıkları metnin sonuna yığılır ve görsel konumu kaybolur.
 function extractMediumParagraphs(html) {
   const blocks =
     html.match(
-      /<p[^>]*class="[^"]*pw-post-body-paragraph[^"]*"[^>]*>[\s\S]*?<\/p>|<h[1-3][^>]*>[\s\S]*?<\/h[1-3]>/gi
+      /<p[^>]*class="[^"]*pw-post-body-paragraph[^"]*"[^>]*>[\s\S]*?<\/p>|<h[1-3][^>]*>[\s\S]*?<\/h[1-3]>|<figure\b[\s\S]*?<\/figure>|<img\b[^>]*>/gi
     ) || [];
   if (!blocks.length) return "";
 
   const lines = [];
+  let visualIndex = 0;
+
+  const pushVisualFromImg = (imgTag, caption = "") => {
+    const src = imgTag.match(/\bsrc=["']([^"']*)["']/i)?.[1] || "";
+    if (isDecorativeImageUrl(src)) return;
+    visualIndex += 1;
+    const alt = imgTag.match(/\balt=["']([^"']*)["']/i)?.[1] || "";
+    lines.push(
+      formatVisualPlaceholder({
+        kind: inferVisualKind({ alt, caption, url: src }),
+        alt,
+        caption,
+        index: visualIndex,
+      })
+    );
+  };
+
   for (const block of blocks) {
-    const line = htmlToText(block);
+    if (/^<img\b/i.test(block)) {
+      pushVisualFromImg(block);
+      continue;
+    }
+    if (/^<figure\b/i.test(block)) {
+      const imgTag = block.match(/<img\b[^>]*>/i)?.[0];
+      const captionHtml =
+        block.match(/<figcaption\b[^>]*>([\s\S]*?)<\/figcaption>/i)?.[1] || "";
+      const caption = decodeEntities(captionHtml.replace(/<[^>]+>/g, " "))
+        .replace(/\s+/g, " ")
+        .trim();
+      if (imgTag) pushVisualFromImg(imgTag, caption);
+      else if (caption) lines.push(caption);
+      continue;
+    }
+    const line = decodeEntities(
+      block
+        .replace(/<img\b[^>]*>/gi, " ")
+        .replace(/<[^>]+>/g, " ")
+    )
+      .replace(/[ \t\u00a0]+/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
     if (line && line !== lines[lines.length - 1]) lines.push(line);
   }
   return lines.join("\n\n");
@@ -476,7 +616,22 @@ function articleFromMediumJson(raw) {
   let visualsCount = 0;
 
   for (const paragraph of paragraphs) {
-    if (paragraph?.type === MEDIUM_PARAGRAPH_TYPE.IMAGE) visualsCount += 1;
+    if (paragraph?.type === MEDIUM_PARAGRAPH_TYPE.IMAGE) {
+      visualsCount += 1;
+      const meta = paragraph.metadata || {};
+      const alt = String(paragraph.alt ?? meta.alt ?? "").trim();
+      const caption = String(paragraph.text ?? "").trim();
+      const url = String(meta.id ?? meta.originalUrl ?? "");
+      lines.push(
+        formatVisualPlaceholder({
+          kind: inferVisualKind({ alt, caption, url }),
+          alt,
+          caption,
+          index: visualsCount,
+        })
+      );
+      continue;
+    }
 
     const text = String(paragraph?.text ?? "").trim();
     if (!text) continue;
@@ -586,8 +741,17 @@ const READER_NOISE_PATTERNS = [
 ];
 
 function markdownToText(markdown) {
+  let visualIndex = 0;
   let text = markdown
-    .replace(/!\[[^\]]*\]\([^)]*\)/g, "")
+    .replace(/!\[([^\]]*)\]\(([^)]*)\)/g, (_, alt, url) => {
+      if (isDecorativeImageUrl(url)) return "";
+      visualIndex += 1;
+      return `\n\n${formatVisualPlaceholder({
+        kind: inferVisualKind({ alt, url }),
+        alt,
+        index: visualIndex,
+      })}\n\n`;
+    })
     .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
     .replace(/^#{1,6}\s+/gm, "")
     .replace(/\*\*([^*]+)\*\*/g, "$1")
@@ -610,13 +774,10 @@ function articleFromReaderMarkdown(raw) {
   const marker = raw.indexOf("Markdown Content:");
   const body = marker >= 0 ? raw.slice(marker + "Markdown Content:".length) : raw;
 
-  // Yazar avatarı resize:fill ile kare kırpılmış gelir; içerik görseli değildir.
-  const images = body.match(/!\[[^\]]*\]\([^)]*\)/g) || [];
-  const visualsCount = images.filter((image) => !/resize:fill:/.test(image)).length;
-
   const text = markdownToText(body);
   if (text.length < MIN_ARTICLE_CHARS) return null;
 
+  const visualsCount = countVisualPlaceholders(text);
   const title = raw.match(/^Title:\s*(.+)$/m)?.[1]?.trim() || "";
   return {
     text: title && !text.startsWith(title) ? `${title}\n\n${text}` : text,
@@ -714,11 +875,13 @@ async function extractFromDocx(docxBase64) {
 // değerlendirmeden çıkarılır.
 function extractFromPlainText(content) {
   const text = String(content).trim();
+  const placeholders = countVisualPlaceholders(text);
   const signals = countVisualSignalsInText(text);
+  const visualsCount = placeholders > 0 ? placeholders : signals > 0 ? signals : null;
   return {
     text,
-    visualsCount: signals > 0 ? signals : null,
-    source: signals > 0 ? "metin-isaretleri" : "text",
+    visualsCount,
+    source: visualsCount != null ? "metin-isaretleri" : "text",
   };
 }
 
