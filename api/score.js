@@ -185,12 +185,12 @@ Bu bölümün amacı yazara işe yarar geri bildirim vermektir. Boş bir liste y
 Verilen metin gerçek bir makale değilse (tek cümle, rastgele karakterler, test verisi, makale yapısı taşımayan not) SADECE şunu dön:
 {"is_valid_article": false, "reason": "Geçerli bir makale metni bulunamadı."}
 
-## DİL KURALI (dikkat: iki farklı alan grubu var)
-Senin yazdığın açıklama alanları TÜRKÇE olmalıdır: summary, title, detail, problem, rationale, issue, reason, rewrite, takeaways, skimmability, headline_feedback, headline_suggestions, hook_rewrite.
+## DİL KURALI (dikkat: üç farklı alan grubu var — makale dili ne olursa olsun bağlayıcıdır)
+1. Değerlendirme açıklamaları HER ZAMAN TÜRKÇE: summary, title, detail, problem, rationale, issue, reason, takeaways, skimmability, headline_feedback. Makale İngilizce olsa bile bu alanları İngilizce yazma.
+2. Yeniden yazım / öneri metinleri MAKALE DİLİNDE: rewrite, headline_suggestions, hook_rewrite. Bunlar yazarın makaleye doğrudan yapıştıracağı metinlerdir; makale İngilizceyse İngilizce, Türkçeyse Türkçe yaz.
+3. Makaleden kopyalanan alanlar ASLA ÇEVRİLMEZ; makale hangi dildeyse o dilde, birebir aynı karakterlerle yazılır: evidence_quote, section, sections, detected_title, metrics_found.quote, process_steps_found.quote, visual_signals_found.
 
-Makaleden kopyaladığın alanlar ise ASLA ÇEVRİLMEZ; makale hangi dildeyse o dilde, birebir aynı karakterlerle yazılır: evidence_quote, section, sections, detected_title, metrics_found.quote, process_steps_found.quote, visual_signals_found.
-
-Makale İngilizceyse alıntılar İngilizce kalır, bölüm adları İngilizce kalır. Bir alıntıyı veya bölüm adını Türkçeye çevirirsen sistem onu makalede bulamaz, o maddeyi siler ve emeğin boşa gider. Alıntı kopyala, çevirme.
+Makale İngilizceyse alıntılar ve bölüm adları İngilizce kalır; açıklama alanları yine Türkçe kalır. Bir alıntıyı veya bölüm adını Türkçeye çevirirsen sistem onu makalede bulamaz, o maddeyi siler ve emeğin boşa gider. Alıntı kopyala, çevirme.
 
 ## ÇIKTI
 Yalnızca aşağıdaki JSON'u dön, başka hiçbir şey yazma.
@@ -246,13 +246,13 @@ Diyelim makalede şu cümle geçiyor:
 "We reduced password reset tickets by 37% within two quarters"
 Bu cümleye dayalı doğru bir strengths maddesi şöyledir:
 {"title": "Sonucun ölçülmüş bir oranla verilmesi", "section": "Results", "detail": "Yazar iyileştirmenin etkisini somut bir oranla ve zaman aralığıyla paylaşıyor. Bu, iddiayı doğrulanabilir hale getiriyor. Okuyucu benzer bir işi kendi ekibinde savunurken bu ölçüyü referans alabilir.", "evidence_quote": "We reduced password reset tickets by 37% within two quarters"}
-Dikkat: açıklama alanları Türkçe, evidence_quote ve section makaledeki hâliyle İngilizce kalmış. evidence_quote metinden kopyalanmış, yeniden yazılmamış.
+Dikkat: title/detail Türkçe; evidence_quote ve section makale dilinde (İngilizce) kalmış. evidence_quote metinden kopyalanmış, yeniden yazılmamış.
 
 Aynı makalede şu cümle de geçiyor olsun:
 "The new flow was much better for our users"
 Bu cümleye dayalı doğru bir improvements maddesi şöyledir:
 {"title": "Genel iyilik iddiasının ölçüye bağlanmaması", "section": "Redesign", "problem": "İyileşme iddiası hiçbir ölçüye dayanmıyor.", "rewrite": "The new flow cut average completion time from 4:10 to 2:35 across 1,200 sessions.", "detail": "Bu cümle iyileşmeyi öne sürüyor ama neyin ne kadar iyileştiğini söylemiyor. Okuyucu iddiayı doğrulayamıyor ve kendi ekibine taşıyamıyor. Yazar burada Results bölümünde paylaştığı ölçüyü cümlenin içine taşımalı.", "evidence_quote": "The new flow was much better for our users"}
-Dikkat: alıntı bir eksikliği kanıtlamıyor, düzeltilmesi gereken cümlenin ta kendisi. Eleştiri her zaman metinde bir yere dokunur.
+Dikkat: title/problem/detail Türkçe; rewrite makale dilinde (İngilizce) çünkü yazarın cümlesinin yerine geçecek. Alıntı bir eksikliği kanıtlamıyor, düzeltilmesi gereken cümlenin ta kendisi.
 
 ## SON KONTROL (JSON'u vermeden önce kendine sor)
 - Yazdığım her bölüm adı metinde birebir geçiyor mu?
@@ -261,6 +261,7 @@ Dikkat: alıntı bir eksikliği kanıtlamıyor, düzeltilmesi gereken cümlenin 
 - Olasılık bildiren kelime kullandım mı?
 - Metinden ölçemediğim bir kriteri puanladım mı?
 - [META] gorsel_sayisi >= 1 iken "görsel yok/eksik" improvement yazdım mı? Yazdıysam sil.
+- summary/title/detail/problem/rationale alanlarını makale diline kaydırıp İngilizce mi yazdım? Yazdıysam Türkçeye çevir.
 Bir madde bu kontrolü geçmiyorsa o maddeyi çıkar.
 
 Son olarak ters yönde kontrol et:
