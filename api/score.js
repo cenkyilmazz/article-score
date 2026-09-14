@@ -186,11 +186,15 @@ Verilen metin gerçek bir makale değilse (tek cümle, rastgele karakterler, tes
 {"is_valid_article": false, "reason": "Geçerli bir makale metni bulunamadı."}
 
 ## DİL KURALI (dikkat: iki farklı alan grubu var)
-Senin yazdığın açıklama alanları TÜRKÇE olmalıdır: summary, title, detail, problem, rationale, issue, reason, rewrite, takeaways, skimmability, headline_feedback, headline_suggestions, hook_rewrite.
+Makalenin dili ne olursa olsun (İngilizce, Türkçe veya karışık), değerlendirme açıklamaları HER ZAMAN TÜRKÇE yazılmalıdır. Makale İngilizce diye summary/detail/title gibi alanları İngilizce yazmak YASAKTIR.
 
-Makaleden kopyaladığın alanlar ise ASLA ÇEVRİLMEZ; makale hangi dildeyse o dilde, birebir aynı karakterlerle yazılır: evidence_quote, section, sections, detected_title, metrics_found.quote, process_steps_found.quote, visual_signals_found.
+Her zaman TÜRKÇE (açıklama alanları): summary, title, detail, problem, rationale, issue, reason, takeaways, skimmability, headline_feedback.
 
-Makale İngilizceyse alıntılar İngilizce kalır, bölüm adları İngilizce kalır. Bir alıntıyı veya bölüm adını Türkçeye çevirirsen sistem onu makalede bulamaz, o maddeyi siler ve emeğin boşa gider. Alıntı kopyala, çevirme.
+Makale dilinde yazılacak (yazarın metne yapıştırabilmesi için): rewrite, headline_suggestions, hook_rewrite.
+
+Makaleden kopyaladığın alanlar ASLA ÇEVRİLMEZ; makale hangi dildeyse o dilde, birebir aynı karakterlerle yazılır: evidence_quote, section, sections, detected_title, metrics_found.quote, process_steps_found.quote, visual_signals_found.
+
+Makale İngilizceyse alıntılar ve bölüm adları İngilizce kalır; ama summary, title, detail, problem, rationale ve headline_feedback yine Türkçe olmalıdır. Bir alıntıyı veya bölüm adını Türkçeye çevirirsen sistem onu makalede bulamaz, o maddeyi siler ve emeğin boşa gider. Alıntı kopyala, çevirme.
 
 ## ÇIKTI
 Yalnızca aşağıdaki JSON'u dön, başka hiçbir şey yazma.
@@ -246,7 +250,7 @@ Diyelim makalede şu cümle geçiyor:
 "We reduced password reset tickets by 37% within two quarters"
 Bu cümleye dayalı doğru bir strengths maddesi şöyledir:
 {"title": "Sonucun ölçülmüş bir oranla verilmesi", "section": "Results", "detail": "Yazar iyileştirmenin etkisini somut bir oranla ve zaman aralığıyla paylaşıyor. Bu, iddiayı doğrulanabilir hale getiriyor. Okuyucu benzer bir işi kendi ekibinde savunurken bu ölçüyü referans alabilir.", "evidence_quote": "We reduced password reset tickets by 37% within two quarters"}
-Dikkat: açıklama alanları Türkçe, evidence_quote ve section makaledeki hâliyle İngilizce kalmış. evidence_quote metinden kopyalanmış, yeniden yazılmamış.
+Dikkat: açıklama alanları (title, detail) makale İngilizce olsa bile TÜRKÇE; evidence_quote ve section makaledeki hâliyle İngilizce kalmış. evidence_quote metinden kopyalanmış, yeniden yazılmamış.
 
 Aynı makalede şu cümle de geçiyor olsun:
 "The new flow was much better for our users"
@@ -261,6 +265,7 @@ Dikkat: alıntı bir eksikliği kanıtlamıyor, düzeltilmesi gereken cümlenin 
 - Olasılık bildiren kelime kullandım mı?
 - Metinden ölçemediğim bir kriteri puanladım mı?
 - [META] gorsel_sayisi >= 1 iken "görsel yok/eksik" improvement yazdım mı? Yazdıysam sil.
+- summary, title, detail, problem, rationale, headline_feedback alanlarını makale İngilizce olsa bile Türkçe mi yazdım? İngilizce yazdıysam Türkçeye çevir.
 Bir madde bu kontrolü geçmiyorsa o maddeyi çıkar.
 
 Son olarak ters yönde kontrol et:
